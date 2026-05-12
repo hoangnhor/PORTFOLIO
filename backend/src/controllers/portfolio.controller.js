@@ -1,6 +1,6 @@
 import { getPortfolioFromDb, upsertPortfolioToDb } from "../services/portfolio.service.js";
 
-export async function getPortfolio(req, res) {
+export async function getPortfolio(req, res, next) {
   try {
     const portfolio = await getPortfolioFromDb();
 
@@ -8,20 +8,19 @@ export async function getPortfolio(req, res) {
       return res.status(404).json({ message: "Portfolio not found in database" });
     }
 
+    res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
     return res.json(portfolio);
   } catch (error) {
-    return res.status(500).json({ message: "Cannot load portfolio", error: error.message });
+    return next(error);
   }
 }
 
-export async function upsertPortfolio(req, res) {
+export async function upsertPortfolio(req, res, next) {
   try {
     const payload = req.body || {};
-
     const portfolio = await upsertPortfolioToDb(payload);
-
     return res.json(portfolio);
   } catch (error) {
-    return res.status(400).json({ message: "Cannot update portfolio", error: error.message });
+    return next(error);
   }
 }
