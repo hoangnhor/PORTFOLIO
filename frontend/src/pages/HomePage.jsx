@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "../assets/styles/homePage.css";
 import { staticProfile } from "../data/staticProfile";
 import MainLayout from "../layouts/MainLayout";
@@ -125,41 +125,59 @@ function getProjectActionLinks(project) {
   return actions;
 }
 
+function toFriendlyError(error) {
+  if (error?.code === "TIMEOUT") {
+    return "Kết nối đến máy chủ quá chậm. Vui lòng thử lại.";
+  }
+  if (error?.code === "HTTP_ERROR") {
+    return `Không tải được dữ liệu dự án (HTTP ${error.status || "?"}).`;
+  }
+  return "Không tải được dữ liệu dự án từ cơ sở dữ liệu.";
+}
+
 function HomePage() {
   const [portfolio, setPortfolio] = useState(emptyPortfolio);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    let isActive = true;
+  async function loadProjects(skipCache = false) {
+    if (!isMountedRef.current) {
+      return;
+    }
+    setIsLoading(true);
+    setErrorMessage("");
 
-    async function loadProjects() {
-      try {
-        const projects = await getPortfolioProjects();
-        if (!isActive) {
-          return;
-        }
-        const normalizedProjects = normalizeProjects(projects);
-        setPortfolio({
-          ...staticProfile,
-          projects: normalizedProjects.length ? normalizedProjects : staticProfile.projects || []
-        });
-      } catch {
-        if (!isActive) {
-          return;
-        }
-        setErrorMessage("Không tải được dữ liệu dự án từ cơ sở dữ liệu.");
-        setPortfolio({ ...staticProfile, projects: staticProfile.projects || [] });
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
-        }
+    try {
+      const projects = await getPortfolioProjects({ skipCache });
+      const normalizedProjects = normalizeProjects(projects);
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setPortfolio({
+        ...staticProfile,
+        projects: normalizedProjects.length ? normalizedProjects : staticProfile.projects || []
+      });
+    } catch (error) {
+      if (!isMountedRef.current) {
+        return;
+      }
+      setErrorMessage(toFriendlyError(error));
+      setPortfolio({ ...staticProfile, projects: staticProfile.projects || [] });
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
       }
     }
+  }
 
-    loadProjects();
+  useEffect(() => {
+    isMountedRef.current = true;
+    loadProjects(false);
+
     return () => {
-      isActive = false;
+      isMountedRef.current = false;
     };
   }, []);
 
@@ -217,6 +235,61 @@ function HomePage() {
       details: []
     }))
   ];
+  const contactRows = [
+    {
+      label: "Email",
+      content: displayPortfolio.email ? <a href={`mailto:${displayPortfolio.email}`}>{displayPortfolio.email}</a> : "Chưa cập nhật"
+    },
+    {
+      label: "Điện thoại",
+      content: displayPortfolio.phone ? <a href={`tel:${displayPortfolio.phone}`}>{displayPortfolio.phone}</a> : "Chưa cập nhật"
+    },
+    ...(displayPortfolio.resumeUrl
+      ? [
+          {
+            label: "CV",
+            content: (
+              <a href={displayPortfolio.resumeUrl} target="_blank" rel="noopener noreferrer">
+                Xem CV
+              </a>
+            )
+          }
+        ]
+      : []),
+    ...(websiteLink
+      ? [
+          {
+            label: "Website",
+            content: (
+              <a href={websiteLink.url} target="_blank" rel="noopener noreferrer">
+                {formatLinkValue(websiteLink.url)}
+              </a>
+            )
+          }
+        ]
+      : []),
+    ...(githubLink
+      ? [
+          {
+            label: "GitHub",
+            content: (
+              <a href={githubLink.url} target="_blank" rel="noopener noreferrer">
+                {formatLinkValue(githubLink.url)}
+              </a>
+            )
+          }
+        ]
+      : []),
+    {
+      label: "Địa điểm",
+      content: displayPortfolio.location
+    },
+    {
+      label: "Trạng thái",
+      content: "Sẵn sàng làm việc - Fresher / Intern",
+      valueClassName: "contact-status"
+    }
+  ];
 
   function handleNavScroll(event, targetId) {
     event.preventDefault();
@@ -235,7 +308,10 @@ function HomePage() {
   return (
     <MainLayout>
       <div className="portfolio-page">
-        <nav>
+        <a className="skip-link" href="#main-content">
+          Bỏ qua điều hướng
+        </a>
+        <nav aria-label="Điều hướng hồ sơ">
           <div className="nav-mark">{displayPortfolio.fullName}</div>
           <div className="nav-right">
             <a href="#skills" className="nav-link" onClick={(event) => handleNavScroll(event, "skills")}>
@@ -257,10 +333,28 @@ function HomePage() {
           </div>
         </nav>
 
-        {isLoading ? <div className="data-status">Đang tải dữ liệu dự án...</div> : null}
-        {!isLoading && errorMessage ? <div className="data-status data-status-error">{errorMessage}</div> : null}
-
-        <div className="hero">
+        {isLoading ? (
+          <div className="data-status" role="status" aria-live="polite">
+            Đang tải dữ liệu dự án...
+          </div>
+        ) : null}
+        {!isLoading && errorMessage ? (
+          <div className="data-status data-status-error" role="alert" aria-live="assertive">
+            {errorMessage}
+            <button
+              type="button"
+              className="project-action-link"
+              onClick={() => loadProjects(true)}
+              style={{ marginLeft: 12 }}
+              aria-label="Thử tải lại dữ liệu dự án"
+              disabled={isLoading}
+            >
+              Thử lại
+            </button>
+          </div>
+        ) : null}
+        <main id="main-content">
+          <div className="hero">
           <div className="hero-left fade-in">
             <div className="hero-eyebrow">Hồ sơ 2026</div>
             <div className="hero-name-block">
@@ -290,9 +384,7 @@ function HomePage() {
           </div>
 
           <div className="hero-right fade-in">
-            <p className="hero-desc">
-              {displayPortfolio.careerObjective || displayPortfolio.intro}
-            </p>
+            <p className="hero-desc">{displayPortfolio.careerObjective || displayPortfolio.intro}</p>
             <div className="hero-links">
               {heroLinks.map((link) => {
                 const openInNewTab = isHttpUrl(link.url);
@@ -302,7 +394,7 @@ function HomePage() {
                     href={link.url}
                     className="hero-link"
                     target={openInNewTab ? "_blank" : undefined}
-                    rel={openInNewTab ? "noreferrer" : undefined}
+                    rel={openInNewTab ? "noopener noreferrer" : undefined}
                   >
                     <div className="hero-link-left">
                       <span className="hero-link-label">{link.label}</span>
@@ -314,17 +406,17 @@ function HomePage() {
               })}
             </div>
           </div>
-        </div>
+          </div>
 
-        <div className="divider-bar">
+          <div className="divider-bar">
           <div className="divider-text">Công nghệ</div>
           <div className="divider-ticker">
             <span className="ticker-item">{tickerText}</span>
             <span className="ticker-item">{tickerText}</span>
           </div>
-        </div>
+          </div>
 
-        <div className="skills-section" id="skills">
+          <div className="skills-section" id="skills">
           <div className="skills-sidebar fade-in">
             <div>
               <div className="section-number">02 - Kỹ năng</div>
@@ -352,9 +444,9 @@ function HomePage() {
               </div>
             ))}
           </div>
-        </div>
+          </div>
 
-        <div className="projects-section" id="projects">
+          <div className="projects-section" id="projects">
           <div className="projects-header">
             <div className="projects-title">
               Dự án
@@ -396,7 +488,7 @@ function HomePage() {
                             href={action.url}
                             className="project-action-link"
                             target="_blank"
-                            rel="noreferrer"
+                            rel="noopener noreferrer"
                           >
                             <span>{action.label}</span>
                             <span className="project-action-arrow">↗</span>
@@ -417,7 +509,7 @@ function HomePage() {
                                 href={option.url}
                                 className="project-action-sublink"
                                 target="_blank"
-                                rel="noreferrer"
+                                rel="noopener noreferrer"
                               >
                                 {option.label}
                               </a>
@@ -432,9 +524,9 @@ function HomePage() {
               </div>
             );
           })}
-        </div>
+          </div>
 
-        <div className="exp-section" id="exp">
+          <div className="exp-section" id="exp">
           <div className="exp-sidebar fade-in">
             <div className="section-number">03 - Kinh nghiệm</div>
             <div className="section-title-v">
@@ -462,9 +554,9 @@ function HomePage() {
               </div>
             ))}
           </div>
-        </div>
+          </div>
 
-        <div className="contact-section" id="contact">
+          <div className="contact-section" id="contact">
           <div className="contact-left fade-in">
             <div>
               <div className="contact-big">
@@ -491,59 +583,16 @@ function HomePage() {
 
           <div className="contact-right fade-in">
             <div className="contact-info-rows">
-              <div className="contact-row">
-                <div className="contact-row-label">Email</div>
-                <div className="contact-row-val">
-                  {displayPortfolio.email ? <a href={`mailto:${displayPortfolio.email}`}>{displayPortfolio.email}</a> : "Chưa cập nhật"}
+              {contactRows.map((row) => (
+                <div className="contact-row" key={row.label}>
+                  <div className="contact-row-label">{row.label}</div>
+                  <div className={`contact-row-val ${row.valueClassName || ""}`.trim()}>{row.content}</div>
                 </div>
-              </div>
-              <div className="contact-row">
-                <div className="contact-row-label">Điện thoại</div>
-                <div className="contact-row-val">
-                  {displayPortfolio.phone ? <a href={`tel:${displayPortfolio.phone}`}>{displayPortfolio.phone}</a> : "Chưa cập nhật"}
-                </div>
-              </div>
-              {displayPortfolio.resumeUrl ? (
-                <div className="contact-row">
-                  <div className="contact-row-label">CV</div>
-                  <div className="contact-row-val">
-                    <a href={displayPortfolio.resumeUrl} target="_blank" rel="noreferrer">
-                      Xem CV
-                    </a>
-                  </div>
-                </div>
-              ) : null}
-              {websiteLink ? (
-                <div className="contact-row">
-                  <div className="contact-row-label">Website</div>
-                  <div className="contact-row-val">
-                    <a href={websiteLink.url} target="_blank" rel="noreferrer">
-                      {formatLinkValue(websiteLink.url)}
-                    </a>
-                  </div>
-                </div>
-              ) : null}
-              {githubLink ? (
-                <div className="contact-row">
-                  <div className="contact-row-label">GitHub</div>
-                  <div className="contact-row-val">
-                    <a href={githubLink.url} target="_blank" rel="noreferrer">
-                      {formatLinkValue(githubLink.url)}
-                    </a>
-                  </div>
-                </div>
-              ) : null}
-              <div className="contact-row">
-                <div className="contact-row-label">Địa điểm</div>
-                <div className="contact-row-val">{displayPortfolio.location}</div>
-              </div>
-              <div className="contact-row">
-                <div className="contact-row-label">Trạng thái</div>
-                <div className="contact-row-val contact-status">Sẵn sàng làm việc - Fresher / Intern</div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
+        </main>
 
         <footer>
           <div className="footer-copy">© 2026 {displayPortfolio.fullName}</div>
@@ -555,8 +604,3 @@ function HomePage() {
 }
 
 export default HomePage;
-
-
-
-
-

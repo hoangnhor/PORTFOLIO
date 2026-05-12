@@ -29,6 +29,27 @@
   line-height: 1.14;
 }
 
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: 8px;
+  z-index: 2000;
+  padding: 8px 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-150%);
+  transition: transform 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
 .page-curtain {
   position: fixed;
   inset: 0;
@@ -155,6 +176,13 @@
 
 .nav-link:hover {
   color: var(--red);
+}
+
+.portfolio-page a:focus-visible,
+.portfolio-page button:focus-visible,
+.portfolio-page summary:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
 }
 
 #skills,
