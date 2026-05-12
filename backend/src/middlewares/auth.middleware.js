@@ -16,12 +16,18 @@ function readToken(req) {
 
 export function requireAdminToken(req, res, next) {
   if (!env.adminToken) {
-    return res.status(500).json({ message: "Server chưa cấu hình ADMIN_TOKEN" });
+    return res.status(500).json({
+      message: "Server chưa cấu hình ADMIN_TOKEN",
+      requestId: req.requestId || null
+    });
   }
 
   const token = readToken(req);
   if (!token || token !== env.adminToken) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({
+      message: "Unauthorized",
+      requestId: req.requestId || null
+    });
   }
 
   return next();
