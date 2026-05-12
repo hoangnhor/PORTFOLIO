@@ -9,7 +9,7 @@ export const defaultPortfolio = {
   email: "hoangtranvan999@gmail.com",
   phone: "0837271203",
   birthDate: "27/12/2003",
-  resumeUrl: "/CV_WebDev_Tran Van Hoang.pdf",
+  resumeUrl: "/Fresher Fullstack Developer_TranVanHoang.pdf",
   cvRawText: `Trần Văn Hoàng
 Web Developer
 THÔNG TIN CÁ NHÂN

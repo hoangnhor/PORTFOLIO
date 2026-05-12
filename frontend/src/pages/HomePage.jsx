@@ -1,37 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import "../assets/styles/homePage.css";
+import { staticProfile } from "../data/staticProfile";
 import MainLayout from "../layouts/MainLayout";
-import { getPortfolio } from "../services/portfolioApi";
+import { getPortfolioProjects } from "../services/portfolioApi";
 
 const emptyPortfolio = {
-  fullName: "",
-  headline: "",
-  intro: "",
-  careerObjective: "",
-  location: "",
-  email: "",
-  phone: "",
-  socials: [],
-  skills: [],
-  projects: [],
-  experiences: [],
-  education: []
+  ...staticProfile,
+  projects: []
 };
 
-function normalizePortfolioData(data) {
-  if (!data || typeof data !== "object") {
-    return emptyPortfolio;
-  }
-
-  return {
-    ...emptyPortfolio,
-    ...data,
-    socials: Array.isArray(data.socials) ? data.socials : [],
-    skills: Array.isArray(data.skills) ? data.skills : [],
-    projects: Array.isArray(data.projects) ? data.projects : [],
-    experiences: Array.isArray(data.experiences) ? data.experiences : [],
-    education: Array.isArray(data.education) ? data.education : []
-  };
+function normalizeProjects(projects) {
+  return Array.isArray(projects) ? projects : [];
 }
 
 function splitDisplayName(fullName) {
@@ -154,18 +133,18 @@ function HomePage() {
   useEffect(() => {
     let isActive = true;
 
-    async function loadPortfolio() {
+    async function loadProjects() {
       try {
-        const data = await getPortfolio();
+        const projects = await getPortfolioProjects();
         if (!isActive) {
           return;
         }
-        setPortfolio(normalizePortfolioData(data));
-      } catch (error) {
+        setPortfolio({ ...staticProfile, projects: normalizeProjects(projects) });
+      } catch {
         if (!isActive) {
           return;
         }
-        setErrorMessage("Không tải được dữ liệu từ cơ sở dữ liệu.");
+        setErrorMessage("Không tải được dữ liệu dự án từ cơ sở dữ liệu.");
         setPortfolio(emptyPortfolio);
       } finally {
         if (isActive) {
@@ -174,13 +153,13 @@ function HomePage() {
       }
     }
 
-    loadPortfolio();
+    loadProjects();
     return () => {
       isActive = false;
     };
   }, []);
 
-  const displayPortfolio = useMemo(() => normalizePortfolioData(portfolio), [portfolio]);
+  const displayPortfolio = useMemo(() => ({ ...staticProfile, ...portfolio, projects: normalizeProjects(portfolio.projects) }), [portfolio]);
 
   useEffect(() => {
     const fadeInElements = document.querySelectorAll(".fade-in");
@@ -249,7 +228,7 @@ function HomePage() {
 
   return (
     <MainLayout>
-        <div className="portfolio-page">
+      <div className="portfolio-page">
         <nav>
           <div className="nav-mark">{displayPortfolio.fullName}</div>
           <div className="nav-right">
@@ -272,7 +251,7 @@ function HomePage() {
           </div>
         </nav>
 
-        {isLoading ? <div className="data-status">Đang tải dữ liệu hồ sơ từ cơ sở dữ liệu...</div> : null}
+        {isLoading ? <div className="data-status">Đang tải dữ liệu dự án...</div> : null}
         {!isLoading && errorMessage ? <div className="data-status data-status-error">{errorMessage}</div> : null}
 
         <div className="hero">
