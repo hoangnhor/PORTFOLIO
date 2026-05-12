@@ -1,105 +1,163 @@
-# Portfolio Fullstack (BE + FE)
+# Portfolio Fullstack (React + Node.js + MongoDB)
 
-## Cau truc thu muc
+Production-aware personal portfolio project with:
+- Frontend: React + Vite
+- Backend: Express + Mongoose
+- Database: MongoDB
+
+## 1) Repository Structure
 ```text
 .
 |-- backend/
 |   |-- src/
+|   |   |-- app.js
+|   |   |-- server.js
 |   |   |-- config/
-|   |   |   |-- database.js
-|   |   |   `-- env.js
 |   |   |-- controllers/
-|   |   |   `-- portfolio.controller.js
-|   |   |-- models/
-|   |   |   `-- portfolio.model.js
-|   |   |-- routes/
-|   |   |   `-- portfolio.routes.js
 |   |   |-- middlewares/
-|   |   |   |-- auth.middleware.js
-|   |   |   `-- error.middleware.js
+|   |   |-- models/
+|   |   |-- repositories/
+|   |   |-- routes/
 |   |   |-- services/
-|   |   |   |-- portfolio.service.js
-|   |   |   `-- portfolio.seed.js
-|   |   `-- utils/
-|   |       `-- defaultPortfolio.js
-|   |   `-- server.js
-|   |-- .env
+|   |   |-- validators/
+|   |-- test/
+|   |-- .env.example
+|   |-- .gitignore
 |   `-- package.json
 |-- frontend/
-|   |-- public/
-|   |   |-- index.html
-|   |   `-- CV_WebDev_Tran Van Hoang.pdf
 |   |-- src/
-|   |   |-- assets/
-|   |   |   |-- styles/
-|   |   |   |   `-- global.css
-|   |   |   `-- templates/
-|   |   |       `-- giaodienportfolio.html
-|   |   |-- components/
-|   |   |   `-- PortfolioFrame.jsx
-|   |   |-- pages/
-|   |   |   `-- HomePage.jsx
-|   |   |-- services/
-|   |   |   `-- portfolioApi.js
-|   |   |-- hooks/
-|   |   |   `-- index.js
-|   |   |-- context/
-|   |   |   `-- index.js
-|   |   |-- layouts/
-|   |   |   `-- MainLayout.jsx
-|   |   |-- routes/
-|   |   |   `-- AppRoutes.jsx
-|   |   |-- utils/
-|   |   |   `-- index.js
-|   |   |-- App.jsx
-|   |   `-- main.jsx
-|   |-- .env
-|   |-- vite.config.js
+|   |-- public/
+|   |-- .env.example
+|   |-- .gitignore
 |   `-- package.json
-`-- package.json
+|-- .github/workflows/ci.yml
+|-- package.json
+`-- README.md
 ```
 
-## Cai dat
+## 2) Prerequisites
+- Node.js 20+
+- npm 10+
+- MongoDB (local or remote)
+
+## 3) Installation
+From repository root:
+
 ```bash
 npm run install:all
 ```
 
-## Environment
-`backend/.env`
-```env
-MONGO_URI=your_mongodb_connection_string
+If needed:
+```bash
+npm run install:be
+npm run install:fe
 ```
 
-`frontend/.env`
+## 4) Environment Variables
+Use `.env.example` as the source of truth.
+
+### Backend (`backend/.env`)
+```env
+NODE_ENV=development
+PORT=5000
+MONGO_URI=mongodb://127.0.0.1:27017/hoang_portfolio
+ADMIN_TOKEN=
+FRONTEND_ORIGINS=http://localhost:5173
+```
+
+### Frontend (`frontend/.env`)
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
-## Chay rieng tung phan
+## 5) Run the Project
+Run both apps:
+```bash
+npm run dev
+```
+
+Run separately:
 ```bash
 npm run dev:be
 npm run dev:fe
 ```
 
-## Chay dong thoi BE + FE
-```bash
-npm run dev
-```
-
-## Seed du lieu MongoDB
+Seed backend data:
 ```bash
 npm run seed:be
 ```
 
-## API
+## 6) API Endpoints
 - `GET /api/health`
 - `GET /api/portfolio`
-- `PUT /api/portfolio` (can `x-admin-token` or `Authorization: Bearer <token>`)
+- `PUT /api/portfolio` (requires `x-admin-token` or `Authorization: Bearer <token>`)
 
-## Update portfolio (protected)
+Example update:
 ```bash
 curl -X PUT http://localhost:5000/api/portfolio \
   -H "Content-Type: application/json" \
   -H "x-admin-token: replace-with-strong-secret" \
   -d "{\"headline\":\"Fullstack Web Developer\"}"
 ```
+
+## 7) Verification Commands
+### Frontend
+```bash
+npm --prefix frontend run lint
+npm --prefix frontend run build
+npm --prefix frontend run test:ci
+```
+
+### Backend
+```bash
+npm --prefix backend run lint
+npm --prefix backend run test
+npm --prefix backend run test:smoke
+```
+
+## 8) CI (GitHub Actions)
+Workflow: `.github/workflows/ci.yml`
+
+CI runs on `push` and `pull_request`:
+1. `npm ci` (root)
+2. `npm --prefix frontend ci`
+3. `npm --prefix backend ci`
+4. `npm --prefix frontend run build`
+5. `npm --prefix frontend run lint`
+6. `npm --prefix backend run lint`
+7. `npm --prefix backend run test`
+8. `npm --prefix backend run test:smoke`
+
+## 9) Health Check and Operational Notes
+- Health endpoint: `GET /api/health`
+- Backend includes request tracing with `x-request-id`.
+- Error responses are production-safe and include `requestId` for troubleshooting.
+
+## 10) Deployment Checklist
+- [ ] Configure all required env vars from `.env.example`.
+- [ ] Set a strong `ADMIN_TOKEN`.
+- [ ] Ensure MongoDB connectivity and credentials.
+- [ ] Run verification commands locally (lint/build/test/smoke).
+- [ ] Ensure CI workflow passes on target branch.
+- [ ] Verify `GET /api/health` returns `status: ok`.
+- [ ] Verify frontend can fetch backend through `VITE_API_BASE_URL`.
+- [ ] Confirm CORS origins via `FRONTEND_ORIGINS`.
+- [ ] Keep `.env` files out of version control.
+
+## 11) Portfolio Demo / Screenshots
+Recommended to include before final showcase:
+- Homepage hero section
+- Projects section
+- Contact section
+- Mobile responsive view
+
+You can place assets under `docs/screenshots/` and reference them here, for example:
+```md
+![Homepage](docs/screenshots/homepage.png)
+![Projects](docs/screenshots/projects.png)
+```
+
+## 12) Known Limitations (Honest Status)
+- Frontend test runner is not configured yet; frontend `test:ci` currently documents/skips this gap.
+- Frontend lint/build and backend lint/test/smoke are in place.
+- This repo has practical production-minded safeguards, but it is still a portfolio project and should be validated further before high-traffic production use.
