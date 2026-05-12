@@ -6,7 +6,7 @@ import { getPortfolioProjects } from "../services/portfolioApi";
 
 const emptyPortfolio = {
   ...staticProfile,
-  projects: []
+  projects: staticProfile.projects || []
 };
 
 function normalizeProjects(projects) {
@@ -139,13 +139,17 @@ function HomePage() {
         if (!isActive) {
           return;
         }
-        setPortfolio({ ...staticProfile, projects: normalizeProjects(projects) });
+        const normalizedProjects = normalizeProjects(projects);
+        setPortfolio({
+          ...staticProfile,
+          projects: normalizedProjects.length ? normalizedProjects : staticProfile.projects || []
+        });
       } catch {
         if (!isActive) {
           return;
         }
         setErrorMessage("Không tải được dữ liệu dự án từ cơ sở dữ liệu.");
-        setPortfolio(emptyPortfolio);
+        setPortfolio({ ...staticProfile, projects: staticProfile.projects || [] });
       } finally {
         if (isActive) {
           setIsLoading(false);
@@ -193,13 +197,15 @@ function HomePage() {
   const localizedHeadline = localizeRoleText(displayPortfolio.headline);
 
   const githubLink = displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("github")) || null;
+  const websiteLink = displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("website")) || null;
   const liveLink =
     displayPortfolio.socials.find((item) => {
       const label = String(item.label || "").toLowerCase();
       return label.includes("demo") || label.includes("live");
     }) || displayPortfolio.socials[0] || null;
   const emailLink = displayPortfolio.email ? { label: "Email", url: `mailto:${displayPortfolio.email}` } : null;
-  const heroLinks = [githubLink, liveLink, emailLink].filter(Boolean);
+  const cvLink = displayPortfolio.resumeUrl ? { label: "CV", url: displayPortfolio.resumeUrl } : null;
+  const heroLinks = [websiteLink, githubLink, liveLink, cvLink, emailLink].filter(Boolean);
 
   const expEntries = [
     ...displayPortfolio.experiences,
@@ -285,7 +291,7 @@ function HomePage() {
 
           <div className="hero-right fade-in">
             <p className="hero-desc">
-              {displayPortfolio.intro} {displayPortfolio.careerObjective || ""}
+              {displayPortfolio.careerObjective || displayPortfolio.intro}
             </p>
             <div className="hero-links">
               {heroLinks.map((link) => {
@@ -497,6 +503,26 @@ function HomePage() {
                   {displayPortfolio.phone ? <a href={`tel:${displayPortfolio.phone}`}>{displayPortfolio.phone}</a> : "Chưa cập nhật"}
                 </div>
               </div>
+              {displayPortfolio.resumeUrl ? (
+                <div className="contact-row">
+                  <div className="contact-row-label">CV</div>
+                  <div className="contact-row-val">
+                    <a href={displayPortfolio.resumeUrl} target="_blank" rel="noreferrer">
+                      Xem CV
+                    </a>
+                  </div>
+                </div>
+              ) : null}
+              {websiteLink ? (
+                <div className="contact-row">
+                  <div className="contact-row-label">Website</div>
+                  <div className="contact-row-val">
+                    <a href={websiteLink.url} target="_blank" rel="noreferrer">
+                      {formatLinkValue(websiteLink.url)}
+                    </a>
+                  </div>
+                </div>
+              ) : null}
               {githubLink ? (
                 <div className="contact-row">
                   <div className="contact-row-label">GitHub</div>
@@ -529,3 +555,8 @@ function HomePage() {
 }
 
 export default HomePage;
+
+
+
+
+

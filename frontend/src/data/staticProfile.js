@@ -1,61 +1,118 @@
 export const staticProfile = {
   fullName: "Trần Văn Hoàng",
-  headline: "Web Developer",
+  headline: "Fresher Fullstack Developer",
   intro:
-    "Web Developer định hướng Fullstack, có nền tảng xây dựng ứng dụng web từ frontend đến backend qua các dự án thực tế.",
+    "Fresher Fullstack Developer với thiên hướng backend, đã tự hoàn thiện 2 dự án thực tế từ đầu đến cuối: hệ thống e-commerce và CMMS công nghiệp với realtime, workflow đa vai trò và bảo mật nhiều lớp.",
   careerObjective:
-    "Web Developer định hướng Fullstack, có nền tảng xây dựng ứng dụng web từ frontend đến backend qua các dự án thực tế. Đã phát triển và triển khai hệ thống CMMS với workflow nghiệp vụ rõ ràng, RESTful API và realtime communication. Mục tiêu trong 1-2 năm tới là đảm nhiệm vị trí Fresher/Intern để tham gia phát triển sản phẩm thật, nâng cao tư duy kỹ thuật và năng lực làm việc trong môi trường chuyên nghiệp.",
-  location: "Thành phố Hồ Chí Minh, Việt Nam",
+    "Đang học năm cuối, có thể đi làm full-time. Mong muốn tham gia team để phát triển sản phẩm thực tế và nâng cao năng lực trong môi trường chuyên nghiệp.",
+  location: "TP. Hồ Chí Minh, Việt Nam",
   email: "hoangtranvan999@gmail.com",
   phone: "0837271203",
   birthDate: "27/12/2003",
-  resumeUrl: "/Fresher Fullstack Developer_TranVanHoang.pdf",
+  resumeUrl: "/cv-tran-van-hoang.pdf",
   socials: [
     { label: "GitHub", url: "https://github.com/hoangnhor" },
-    { label: "CMMS Demo", url: "https://cmms-fe-opal.vercel.app" },
-    { label: "CMMS FE", url: "https://github.com/hoangnhor/CMMS-FE" },
-    { label: "CMMS BE", url: "https://github.com/hoangnhor/CMMS-BE" },
-    { label: "Pet Shop FE", url: "https://github.com/hoangnhor/petshopFE" },
-    { label: "Pet Shop BE", url: "https://github.com/hoangnhor/petshopBE" }
+    { label: "Website", url: "https://tranvanhoang.vercel.app/" },
+    { label: "CMMS Demo", url: "https://htcmms.vercel.app/auth" },
+    { label: "PetShop Demo", url: "https://htpetshop.vercel.app/" }
   ],
   education: [
     {
-      school: "Trường Đại học Công nghệ Sài Gòn (STU)",
-      period: "2021-2025",
+      school: "Trường Đại học Công nghệ Sài Gòn",
+      period: "09/2021-04/2027",
       major: "Công nghệ Thông tin",
-      track: "Fullstack Web Developer"
+      track: "Đang học năm cuối - có thể đi làm full-time"
     }
   ],
   skills: [
     {
       category: "Frontend",
-      items: ["ReactJS", "Tailwind CSS", "Bootstrap", "HTML", "CSS", "JavaScript"]
+      items: ["React.js", "Redux Toolkit", "Zustand", "Tailwind CSS", "Bootstrap", "JavaScript", "HTML5", "CSS3", "Axios"]
     },
     {
       category: "Backend",
-      items: ["Node.js (ExpressJS)"]
+      items: ["Node.js", "Express.js", "RESTful API", "JWT Authentication", "Socket.IO", "node-cron"]
     },
     {
       category: "Database",
-      items: ["MongoDB", "MySQL"]
+      items: ["MongoDB (Mongoose)", "SQL Server"]
     },
     {
-      category: "Tools & Others",
-      items: ["Git", "GitHub", "Postman", "Figma"]
+      category: "Tools",
+      items: ["Git", "GitHub", "Postman", "Figma", "Vercel", "Render"]
+    },
+    {
+      category: "Tiếng Anh",
+      items: ["Đọc tài liệu kỹ thuật"]
+    }
+  ],
+  projects: [
+    {
+      title: "CMMS - Asset & Maintenance Management System",
+      role: "Fullstack Developer",
+      period: "01/2026-05/2026",
+      summary: "Phát triển hệ thống CMMS fullstack với kiến trúc FE/BE tách lớp rõ ràng.",
+      stack: ["React.js", "Vite", "Zustand", "Node.js", "Express.js", "MongoDB", "Socket.IO", "JWT", "node-cron"],
+      links: [
+        { label: "Demo", url: "https://htcmms.vercel.app/auth" },
+        { label: "GitHub FE", url: "https://github.com/hoangnhor/CMMS-FE" },
+        { label: "GitHub BE", url: "https://github.com/hoangnhor/CMMS-BE" }
+      ],
+      highlights: [
+        "Xây dựng 6 module nghiệp vụ: Authentication, Dashboard, Asset, Work Order, Preventive Maintenance, User Administration.",
+        "Dashboard realtime qua Socket.IO với KPI, biểu đồ tổng hợp và cảnh báo quá hạn.",
+        "Bảo mật nhiều lớp: JWT, RBAC, rate limiting và payload sanitization.",
+        "Tối ưu vận hành: pagination, smart filter, export CSV, seed 500+ assets thực tế."
+      ],
+      featured: true
+    },
+    {
+      title: "Portfolio cá nhân",
+      role: "Fullstack Developer",
+      period: "05/2026-nay",
+      summary: "Xây dựng website portfolio fullstack để trình bày hồ sơ, kỹ năng và dự án cá nhân.",
+      stack: ["React.js", "Vite", "Node.js", "Express.js", "MongoDB"],
+      links: [
+        { label: "Demo", url: "https://tranvanhoang.vercel.app/" },
+        { label: "GitHub", url: "https://github.com/hoangnhor/PORTFOLIO" }
+      ],
+      highlights: [
+        "Thiết kế giao diện portfolio theo hướng hiện đại, tối ưu trải nghiệm đọc nội dung.",
+        "Tách dữ liệu động/tĩnh để tăng tốc độ tải trang.",
+        "Triển khai production Frontend trên Vercel và Backend trên Render."
+      ],
+      featured: true
+    },
+    {
+      title: "PetShop - E-Commerce Pet Store Website",
+      role: "Fullstack Developer",
+      period: "08/2025-12/2025",
+      summary: "Phát triển nền tảng e-commerce fullstack với đầy đủ luồng mua hàng và quản trị.",
+      stack: ["React.js", "Redux Toolkit", "React Query", "Ant Design", "Node.js", "Express.js", "MongoDB", "JWT"],
+      links: [
+        { label: "Demo", url: "https://htpetshop.vercel.app/" },
+        { label: "GitHub FE", url: "https://github.com/hoangnhor/PETSHOP-FE" },
+        { label: "GitHub BE", url: "https://github.com/hoangnhor/PETSHOP-BE" }
+      ],
+      highlights: [
+        "JWT authentication: access token 15 phút + refresh token httpOnly cookie, tự động refresh qua Axios interceptor.",
+        "CRUD Product, Category, User - tìm kiếm từ khóa, lọc nâng cao, phân trang.",
+        "Quản lý vòng đời đơn hàng: xem, cập nhật trạng thái, hủy đơn, xóa theo phân quyền.",
+        "Tối ưu UX với React Query (cache, retry, refetch); CORS, rate limit, sanitize payload."
+      ],
+      featured: true
     }
   ],
   experiences: [
     {
       company: "TTP Solutions JSC Company",
       role: "Intern Web Developer",
-      period: "03/2026-05/2026",
-      description:
-        "Phân tích bài toán quản lý tài sản và bảo trì trong môi trường doanh nghiệp, tham gia xây dựng CMMS phục vụ demo nghiệp vụ thực tế.",
+      period: "01/2026-05/2026",
+      description: "Nhận spec từ mentor, tự thiết kế kiến trúc và xây dựng hệ thống CMMS hoàn chỉnh từ đầu đến cuối.",
       details: [
-        "Phân tích bài toán quản lý tài sản và bảo trì trong môi trường doanh nghiệp.",
-        "Tham gia xây dựng hệ thống CMMS phục vụ demo nghiệp vụ thực tế.",
-        "Phát triển fullstack với ReactJS (Frontend) và Node.js/Express (Backend).",
-        "Thiết kế và tích hợp RESTful API, kết nối frontend-backend và kiểm thử luồng chức năng chính."
+        "Thiết kế database schema với 10 collections, xây dựng RESTful API cho toàn bộ module nghiệp vụ.",
+        "Triển khai realtime với Socket.IO và tự động hóa bảo trì định kỳ bằng cron job.",
+        "Tự debug, test và tối ưu luồng chức năng, đảm bảo hệ thống chạy ổn định trên môi trường production."
       ]
     }
   ]
