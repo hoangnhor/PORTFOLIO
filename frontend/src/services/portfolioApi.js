@@ -1,8 +1,9 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
 const PORTFOLIO_ENDPOINT = `${API_BASE_URL}/api/portfolio`;
-const PROJECTS_CACHE_KEY = "portfolio_projects_cache_v2";
+const PROJECTS_CACHE_KEY = "portfolio_projects_cache_v3";
 const PROJECTS_CACHE_TTL_MS = 5 * 60 * 1000;
+const PROJECTS_REQUEST_TIMEOUT_MS = 10000;
 
 function readProjectsCache() {
   try {
@@ -13,15 +14,18 @@ function readProjectsCache() {
 
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.projects) || typeof parsed.updatedAt !== "number") {
+      localStorage.removeItem(PROJECTS_CACHE_KEY);
       return null;
     }
 
     if (Date.now() - parsed.updatedAt > PROJECTS_CACHE_TTL_MS) {
+      localStorage.removeItem(PROJECTS_CACHE_KEY);
       return null;
     }
 
     return parsed.projects;
   } catch {
+    localStorage.removeItem(PROJECTS_CACHE_KEY);
     return null;
   }
 }
@@ -40,15 +44,44 @@ function writeProjectsCache(projects) {
   }
 }
 
-export async function getPortfolioProjects() {
-  const cached = readProjectsCache();
+async function fetchWithTimeout(url, options = {}, timeoutMs = PROJECTS_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeoutError = new Error("Request timeout");
+      timeoutError.code = "TIMEOUT";
+      throw timeoutError;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export async function getPortfolioProjects({ skipCache = false } = {}) {
+  const cached = skipCache ? null : readProjectsCache();
   if (cached) {
     return cached;
   }
 
-  const response = await fetch(PORTFOLIO_ENDPOINT);
+  const response = await fetchWithTimeout(PORTFOLIO_ENDPOINT, {
+    headers: {
+      Accept: "application/json"
+    }
+  });
+
   if (!response.ok) {
-    throw new Error(`Failed to fetch portfolio: ${response.status}`);
+    const httpError = new Error(`Failed to fetch portfolio: ${response.status}`);
+    httpError.code = "HTTP_ERROR";
+    httpError.status = response.status;
+    throw httpError;
   }
 
   const data = await response.json();
@@ -56,4 +89,3 @@ export async function getPortfolioProjects() {
   writeProjectsCache(projects);
   return projects;
 }
-
