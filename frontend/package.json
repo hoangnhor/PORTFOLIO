@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint \"src/**/*.{js,jsx}\"",
+    "test:ci": "node -e \"console.log('No frontend test runner configured yet; skipping test:ci.')\""
   },
   "dependencies": {
     "@studio-freight/lenis": "^1.0.42",
@@ -15,6 +17,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.2"
+    "vite": "^5.4.2",
+    "eslint": "^9.38.0"
   }
 }
