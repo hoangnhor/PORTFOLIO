@@ -8,7 +8,7 @@
     "start": "node src/server.js",
     "seed": "node src/services/portfolio.seed.js",
     "lint": "eslint \"src/**/*.js\" \"test/**/*.js\"",
-    "test": "node --test --test-isolation=none test/api.test.js",
+    "test": "node -e \"const cp=require('node:child_process');const run=(args)=>cp.spawnSync(process.execPath,args,{stdio:'inherit'});let r=run(['--test','--test-isolation=none','test/api.test.js']);if(r.status!==0){r=run(['--test','test/api.test.js']);}process.exit(r.status??1);\"",
     "test:smoke": "node --input-type=module -e \"import('./src/config/env.js').then(({validateEnv}) => { validateEnv(); console.log('smoke:ok'); }).catch((error) => { console.error(error); process.exit(1); })\""
   },
   "dependencies": {
