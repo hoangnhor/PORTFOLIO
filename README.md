@@ -1,4 +1,5 @@
 # Portfolio Fullstack (React + Node.js + MongoDB)
+[![CI](https://github.com/hoangnhor/PORTFOLIO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hoangnhor/PORTFOLIO/actions/workflows/ci.yml)
 
 Production-aware personal portfolio project with:
 - Frontend: React + Vite
@@ -144,17 +145,17 @@ CI runs on `push` and `pull_request`:
 - [ ] Confirm CORS origins via `FRONTEND_ORIGINS`.
 - [ ] Keep `.env` files out of version control.
 
-## 11) Portfolio Demo / Screenshots
-Recommended to include before final showcase:
-- Homepage hero section
-- Projects section
-- Contact section
-- Mobile responsive view
+## 11) Live Demo / Media
+- Live demo: [https://tranvanhoang.vercel.app/](https://tranvanhoang.vercel.app/)
+- GitHub Actions: [CI workflow runs](https://github.com/hoangnhor/PORTFOLIO/actions)
 
-You can place assets under `docs/screenshots/` and reference them here, for example:
+Media assets should be added under `docs/screenshots/` (or `docs/media/`) and referenced here:
 ```md
-![Homepage](docs/screenshots/homepage.png)
-![Projects](docs/screenshots/projects.png)
+![Landing](docs/screenshots/landing.png)
+![Mobile](docs/screenshots/mobile.png)
+![Admin Update Flow](docs/screenshots/admin-update-flow.png)
+![CI Passing](docs/screenshots/ci-passing.png)
+![Demo GIF](docs/media/demo.gif)
 ```
 
 ## 12) Known Limitations (Honest Status)
