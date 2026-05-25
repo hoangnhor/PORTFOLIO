@@ -2,15 +2,62 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "../assets/styles/homePage.css";
 import { staticProfile } from "../data/staticProfile";
 import MainLayout from "../layouts/MainLayout";
-import { getPortfolioProjects } from "../services/portfolioApi";
+import { getPortfolioDynamicSections } from "../services/portfolioApi";
 
 const emptyPortfolio = {
-  ...staticProfile,
+  skills: staticProfile.skills || [],
   projects: staticProfile.projects || []
+  ,
+  experiences: staticProfile.experiences || []
 };
 
+function normalizeProjectTitle(title) {
+  return String(title || "")
+    .toLowerCase()
+    .replace(/[–—]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeProjects(projects) {
-  return Array.isArray(projects) ? projects : [];
+  if (!Array.isArray(projects)) {
+    return [];
+  }
+
+  const projectPriority = {
+    "cmms - asset & maintenance management system": 1,
+    "cmms – asset & maintenance management system": 1,
+    "petshop - e-commerce pet store website": 2,
+    "petshop – e-commerce pet store website": 2
+  };
+
+  return projects
+    .filter((project) => {
+      const title = normalizeProjectTitle(project?.title);
+      return Boolean(projectPriority[title]);
+    })
+    .sort((a, b) => {
+    const aPriority = projectPriority[normalizeProjectTitle(a?.title)] || 99;
+    const bPriority = projectPriority[normalizeProjectTitle(b?.title)] || 99;
+    return aPriority - bPriority;
+  });
+}
+
+function mergeProjectsWithStatic(apiProjects) {
+  const apiMap = new Map(
+    (Array.isArray(apiProjects) ? apiProjects : []).map((project) => [normalizeProjectTitle(project?.title), project])
+  );
+
+  return (staticProfile.projects || []).map((staticProject) => {
+    const apiProject = apiMap.get(normalizeProjectTitle(staticProject.title));
+    if (!apiProject) {
+      return staticProject;
+    }
+    return {
+      ...apiProject,
+      ...staticProject
+    };
+  });
 }
 
 function splitDisplayName(fullName) {
@@ -44,15 +91,7 @@ function isHttpUrl(url) {
 }
 
 function localizeRoleText(text) {
-  if (!text) {
-    return "";
-  }
-
-  return String(text)
-    .replaceAll("Web Developer", "Lập trình viên Website")
-    .replaceAll("Fullstack Developer", "Lập trình viên Fullstack")
-    .replaceAll("Intern", "Thực tập sinh")
-    .replaceAll("(Independent Project)", "(Dự án cá nhân)");
+  return text || "";
 }
 
 function smoothScrollTo(targetTop, duration = 650) {
@@ -93,30 +132,22 @@ function getProjectActionLinks(project) {
     const url = String(link?.url || "").toLowerCase();
     return label.includes("github") || url.includes("github.com");
   });
-  const githubGeneral = githubCandidates.find((link) => /^github$/i.test(String(link?.label || "").trim())) || null;
   const githubFe = githubCandidates.find((link) => /fe|frontend/i.test(String(link?.label || ""))) || null;
   const githubBe = githubCandidates.find((link) => /be|backend/i.test(String(link?.label || ""))) || null;
-  const githubLink = githubGeneral || githubFe || githubBe || githubCandidates[0] || null;
+  const githubGeneral = githubCandidates.find((link) => /^github$/i.test(String(link?.label || "").trim())) || null;
 
   const actions = [];
   if (demoLink) {
     actions.push({ label: "Demo", url: demoLink.url, kind: "demo" });
   }
-  if (githubLink && githubLink.url !== demoLink?.url) {
-    const githubOptions = [];
-    if (githubFe) {
-      githubOptions.push({ label: "GitHub FE", url: githubFe.url });
-    }
-    if (githubBe && githubBe.url !== githubFe?.url) {
-      githubOptions.push({ label: "GitHub BE", url: githubBe.url });
-    }
-
-    actions.push({
-      label: "GitHub",
-      url: githubLink.url,
-      kind: "github",
-      options: githubOptions.length >= 2 ? githubOptions : []
-    });
+  if (githubFe) {
+    actions.push({ label: "Frontend", url: githubFe.url, kind: "frontend" });
+  }
+  if (githubBe && githubBe.url !== githubFe?.url) {
+    actions.push({ label: "Backend", url: githubBe.url, kind: "backend" });
+  }
+  if (!githubFe && !githubBe && githubGeneral) {
+    actions.push({ label: "GitHub", url: githubGeneral.url, kind: "github" });
   }
   if (!actions.length && links[0]) {
     actions.push({ label: links[0].label || "Link", url: links[0].url, kind: "link" });
@@ -139,6 +170,8 @@ function HomePage() {
   const [portfolio, setPortfolio] = useState(emptyPortfolio);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("skills");
   const isMountedRef = useRef(true);
 
   async function loadProjects(skipCache = false) {
@@ -149,22 +182,31 @@ function HomePage() {
     setErrorMessage("");
 
     try {
-      const projects = await getPortfolioProjects({ skipCache });
-      const normalizedProjects = normalizeProjects(projects);
+      const dynamicData = await getPortfolioDynamicSections({ skipCache });
+      const normalizedProjects = normalizeProjects(dynamicData.projects);
+      const mergedProjects = mergeProjectsWithStatic(normalizedProjects);
       if (!isMountedRef.current) {
         return;
       }
 
       setPortfolio({
-        ...staticProfile,
-        projects: normalizedProjects.length ? normalizedProjects : staticProfile.projects || []
+        skills: Array.isArray(dynamicData.skills) && dynamicData.skills.length ? dynamicData.skills : staticProfile.skills || [],
+        projects: mergedProjects.length ? mergedProjects : staticProfile.projects || [],
+        experiences:
+          Array.isArray(dynamicData.experiences) && dynamicData.experiences.length
+            ? dynamicData.experiences
+            : staticProfile.experiences || []
       });
     } catch (error) {
       if (!isMountedRef.current) {
         return;
       }
       setErrorMessage(toFriendlyError(error));
-      setPortfolio({ ...staticProfile, projects: staticProfile.projects || [] });
+      setPortfolio({
+        skills: staticProfile.skills || [],
+        projects: staticProfile.projects || [],
+        experiences: staticProfile.experiences || []
+      });
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
@@ -181,7 +223,15 @@ function HomePage() {
     };
   }, []);
 
-  const displayPortfolio = useMemo(() => ({ ...staticProfile, ...portfolio, projects: normalizeProjects(portfolio.projects) }), [portfolio]);
+  const displayPortfolio = useMemo(
+    () => ({
+      ...staticProfile,
+      skills: Array.isArray(portfolio.skills) && portfolio.skills.length ? portfolio.skills : staticProfile.skills,
+      projects: normalizeProjects(portfolio.projects),
+      experiences: Array.isArray(portfolio.experiences) && portfolio.experiences.length ? portfolio.experiences : staticProfile.experiences
+    }),
+    [portfolio]
+  );
 
   useEffect(() => {
     const fadeInElements = document.querySelectorAll(".fade-in");
@@ -204,7 +254,35 @@ function HomePage() {
     return () => observer.disconnect();
   }, [displayPortfolio]);
 
-  const { firstName, lastName } = useMemo(() => splitDisplayName(displayPortfolio.fullName), [displayPortfolio.fullName]);
+  useEffect(() => {
+    const sectionIds = ["skills", "projects", "exp", "contact"];
+    const sectionElements = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    if (!sectionElements.length) {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visibleEntries.length) {
+          setActiveSection(visibleEntries[0].target.id);
+        }
+      },
+      {
+        rootMargin: "-30% 0px -55% 0px",
+        threshold: [0.15, 0.35, 0.6]
+      }
+    );
+
+    sectionElements.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
 
   const techList = useMemo(() => {
     const allItems = displayPortfolio.skills.flatMap((skill) => (Array.isArray(skill.items) ? skill.items : []));
@@ -216,23 +294,22 @@ function HomePage() {
 
   const githubLink = displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("github")) || null;
   const websiteLink = displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("website")) || null;
-  const liveLink =
-    displayPortfolio.socials.find((item) => {
-      const label = String(item.label || "").toLowerCase();
-      return label.includes("demo") || label.includes("live");
-    }) || displayPortfolio.socials[0] || null;
+  const cmmsDemoLink =
+    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("cmms demo")) || null;
+  const petshopDemoLink =
+    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("petshop demo")) || null;
   const emailLink = displayPortfolio.email ? { label: "Email", url: `mailto:${displayPortfolio.email}` } : null;
   const cvLink = displayPortfolio.resumeUrl ? { label: "CV", url: displayPortfolio.resumeUrl } : null;
-  const heroLinks = [websiteLink, githubLink, liveLink, cvLink, emailLink].filter(Boolean);
+  const heroLinks = [githubLink, cmmsDemoLink, petshopDemoLink, cvLink, emailLink].filter(Boolean);
 
   const expEntries = [
     ...displayPortfolio.experiences,
     ...displayPortfolio.education.map((edu) => ({
       company: edu.school,
-      role: edu.track ? `Cử nhân CNTT - ${edu.track}` : "Cử nhân CNTT",
+      role: edu.track || "Kỹ sư Công nghệ Thông tin",
       period: edu.period,
-      description: edu.major ? `Chuyên ngành: ${edu.major}` : "Học vấn",
-      details: []
+      description: "",
+      details: Array.isArray(edu.details) ? edu.details : []
     }))
   ];
   const contactRows = [
@@ -286,7 +363,7 @@ function HomePage() {
     },
     {
       label: "Trạng thái",
-      content: "Sẵn sàng làm việc - Fresher / Intern",
+      content: "Sẵn sàng làm việc full-time — Fresher Fullstack Developer",
       valueClassName: "contact-status"
     }
   ];
@@ -303,6 +380,8 @@ function HomePage() {
     const targetTop = target.getBoundingClientRect().top + window.scrollY - navbarHeight - 12;
 
     smoothScrollTo(targetTop);
+    setActiveSection(targetId);
+    setIsMobileMenuOpen(false);
   }
 
   return (
@@ -313,29 +392,67 @@ function HomePage() {
         </a>
         <nav aria-label="Điều hướng hồ sơ">
           <div className="nav-mark">{displayPortfolio.fullName}</div>
-          <div className="nav-right">
-            <a href="#skills" className="nav-link" onClick={(event) => handleNavScroll(event, "skills")}>
+          <button
+            type="button"
+            className="nav-mobile-toggle"
+            aria-label="Mở menu điều hướng"
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          >
+            <span className={`hamburger ${isMobileMenuOpen ? "is-open" : ""}`} aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`nav-mobile-overlay ${isMobileMenuOpen ? "is-open" : ""}`}
+            aria-label="Đóng menu"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className={`nav-right ${isMobileMenuOpen ? "is-open" : ""}`}>
+            <a
+              href="#skills"
+              className={`nav-link ${activeSection === "skills" ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, "skills")}
+            >
               Kỹ năng
             </a>
-            <a href="#projects" className="nav-link" onClick={(event) => handleNavScroll(event, "projects")}>
+            <a
+              href="#projects"
+              className={`nav-link ${activeSection === "projects" ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, "projects")}
+            >
               Dự án
             </a>
-            <a href="#exp" className="nav-link" onClick={(event) => handleNavScroll(event, "exp")}>
+            <a
+              href="#exp"
+              className={`nav-link ${activeSection === "exp" ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, "exp")}
+            >
               Kinh nghiệm
             </a>
-            <a href="#contact" className="nav-link" onClick={(event) => handleNavScroll(event, "contact")}>
+            <a
+              href="#contact"
+              className={`nav-link ${activeSection === "contact" ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, "contact")}
+            >
               Liên hệ
             </a>
-            <div className="nav-avail">
-              <div className="nav-avail-dot" />
-              Sẵn sàng làm việc
-            </div>
+            <a
+              href="#contact"
+              className={`nav-cta ${activeSection === "contact" ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, "contact")}
+            >
+              Hire Me
+            </a>
           </div>
         </nav>
 
         {isLoading ? (
           <div className="data-status" role="status" aria-live="polite">
-            Đang tải dữ liệu dự án...
+            Đang tải dữ liệu kỹ năng, dự án, kinh nghiệm...
           </div>
         ) : null}
         {!isLoading && errorMessage ? (
@@ -346,7 +463,7 @@ function HomePage() {
               className="project-action-link"
               onClick={() => loadProjects(true)}
               style={{ marginLeft: 12 }}
-              aria-label="Thử tải lại dữ liệu dự án"
+              aria-label="Thử tải lại dữ liệu kỹ năng, dự án và kinh nghiệm"
               disabled={isLoading}
             >
               Thử lại
@@ -359,8 +476,7 @@ function HomePage() {
             <div className="hero-eyebrow">Hồ sơ 2026</div>
             <div className="hero-name-block">
               <div>
-                <div className="hero-fname">{firstName}</div>
-                <div className="hero-lname">{lastName}</div>
+                <div className="hero-fname">{displayPortfolio.fullName}</div>
               </div>
               <div className="hero-label">
                 <div className="hero-label-text">{localizedHeadline}</div>
@@ -369,22 +485,39 @@ function HomePage() {
             </div>
             <div className="hero-bottom">
               <div className="hero-stat">
-                <div className="hero-stat-n">{displayPortfolio.projects.length}+</div>
-                <div className="hero-stat-l">Dự án thực tế</div>
+                <div className="hero-stat-n">{displayPortfolio.projects.length}</div>
+                <div className="hero-stat-l">Hệ thống fullstack</div>
               </div>
               <div className="hero-stat">
-                <div className="hero-stat-n">{expEntries.length}</div>
-                <div className="hero-stat-l">Kinh nghiệm</div>
+                <div className="hero-stat-n">6</div>
+                <div className="hero-stat-l">Module CMMS</div>
               </div>
               <div className="hero-stat">
-                <div className="hero-stat-n">{techList.length}+</div>
-                <div className="hero-stat-l">Công nghệ</div>
+                <div className="hero-stat-n">10+</div>
+                <div className="hero-stat-l">MongoDB collections</div>
               </div>
             </div>
           </div>
 
           <div className="hero-right fade-in">
             <p className="hero-desc">{displayPortfolio.careerObjective || displayPortfolio.intro}</p>
+            <div className="hero-quick-actions">
+              {displayPortfolio.resumeUrl ? (
+                <a href={displayPortfolio.resumeUrl} className="hero-quick-btn hero-quick-btn-primary" target="_blank" rel="noopener noreferrer">
+                  Download CV
+                </a>
+              ) : null}
+              {githubLink ? (
+                <a href={githubLink.url} className="hero-quick-btn" target="_blank" rel="noopener noreferrer">
+                  View GitHub
+                </a>
+              ) : null}
+              {displayPortfolio.email ? (
+                <a href={`mailto:${displayPortfolio.email}`} className="hero-quick-btn">
+                  Contact Me
+                </a>
+              ) : null}
+            </div>
             <div className="hero-links">
               {heroLinks.map((link) => {
                 const openInNewTab = isHttpUrl(link.url);
@@ -469,6 +602,15 @@ function HomePage() {
                   </div>
                   <div className="project-name">{project.title}</div>
                   <p className="project-desc">{project.summary}</p>
+                  {Array.isArray(project.highlights) && project.highlights.length ? (
+                    <div className="project-highlights">
+                      {project.highlights.map((highlight, highlightIndex) => (
+                        <div className="project-highlight" key={`${project.title}-highlight-${highlightIndex}`}>
+                          {highlight}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                   <div className="project-stack-row">
                     {(project.stack || []).map((stackItem) => (
                       <span className="stack-tag" key={`${project.title}-${stackItem}`}>
@@ -479,45 +621,18 @@ function HomePage() {
                 </div>
                 <div className="project-action-col">
                   <div className="project-action-list">
-                    {actionLinks.map((action) => {
-                      const hasOptions = Array.isArray(action.options) && action.options.length > 0;
-                      if (!hasOptions) {
-                        return (
-                          <a
-                            key={`${project.title}-${action.kind}-${action.url}`}
-                            href={action.url}
-                            className="project-action-link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <span>{action.label}</span>
-                            <span className="project-action-arrow">↗</span>
-                          </a>
-                        );
-                      }
-
-                      return (
-                        <details className="project-action-menu" key={`${project.title}-${action.kind}-${action.url}`}>
-                          <summary className="project-action-link project-action-link-parent">
-                            <span>{action.label}</span>
-                            <span className="project-action-arrow">▾</span>
-                          </summary>
-                          <div className="project-action-submenu">
-                            {action.options.map((option) => (
-                              <a
-                                key={`${project.title}-${action.kind}-${option.url}`}
-                                href={option.url}
-                                className="project-action-sublink"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {option.label}
-                              </a>
-                            ))}
-                          </div>
-                        </details>
-                      );
-                    })}
+                    {actionLinks.map((action) => (
+                      <a
+                        key={`${project.title}-${action.kind}-${action.url}`}
+                        href={action.url}
+                        className="project-action-link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span>{action.label}</span>
+                        <span className="project-action-arrow">↗</span>
+                      </a>
+                    ))}
                     {!actionLinks.length ? <span className="project-action-link project-action-link-disabled">Chưa có link</span> : null}
                   </div>
                 </div>
@@ -544,7 +659,7 @@ function HomePage() {
                 </div>
                 <div className="exp-role">{localizeRoleText(entry.role)}</div>
                 <div className="exp-bullets">
-                  <div className="exp-bullet">{entry.description}</div>
+                  {entry.description ? <div className="exp-bullet">{entry.description}</div> : null}
                   {(entry.details || []).map((detail, detailIndex) => (
                     <div className="exp-bullet" key={`${entry.company}-detail-${detailIndex}`}>
                       {detail}
@@ -567,9 +682,9 @@ function HomePage() {
                 sản phẩm.
               </div>
               <p className="contact-sub">
-                Tìm kiếm cơ hội Fresher / Intern.
+                Tìm kiếm cơ hội Fresher Fullstack Developer.
                 <br />
-                Sẵn sàng bắt đầu ngay.
+                Sẵn sàng làm việc full-time.
               </p>
             </div>
             {displayPortfolio.email ? (
@@ -604,3 +719,4 @@ function HomePage() {
 }
 
 export default HomePage;
+
