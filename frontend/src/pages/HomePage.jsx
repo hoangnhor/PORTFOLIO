@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "../assets/styles/homePage.css";
-import { staticProfile } from "../data/staticProfile";
+import { portfolioData } from "../data/portfolioData";
 import MainLayout from "../layouts/MainLayout";
 import { getPortfolioDynamicSections } from "../services/portfolioApi";
 
 const emptyPortfolio = {
-  skills: staticProfile.skills || [],
-  projects: staticProfile.projects || []
-  ,
-  experiences: staticProfile.experiences || []
+  skills: portfolioData.skills || [],
+  projects: portfolioData.projects || [],
+  experiences: portfolioData.experiences || []
 };
 
 function normalizeProjectTitle(title) {
@@ -48,7 +47,7 @@ function mergeProjectsWithStatic(apiProjects) {
     (Array.isArray(apiProjects) ? apiProjects : []).map((project) => [normalizeProjectTitle(project?.title), project])
   );
 
-  return (staticProfile.projects || []).map((staticProject) => {
+  return (portfolioData.projects || []).map((staticProject) => {
     const apiProject = apiMap.get(normalizeProjectTitle(staticProject.title));
     if (!apiProject) {
       return staticProject;
@@ -190,12 +189,12 @@ function HomePage() {
       }
 
       setPortfolio({
-        skills: Array.isArray(dynamicData.skills) && dynamicData.skills.length ? dynamicData.skills : staticProfile.skills || [],
-        projects: mergedProjects.length ? mergedProjects : staticProfile.projects || [],
+        skills: Array.isArray(dynamicData.skills) && dynamicData.skills.length ? dynamicData.skills : portfolioData.skills || [],
+        projects: mergedProjects.length ? mergedProjects : portfolioData.projects || [],
         experiences:
           Array.isArray(dynamicData.experiences) && dynamicData.experiences.length
             ? dynamicData.experiences
-            : staticProfile.experiences || []
+            : portfolioData.experiences || []
       });
     } catch (error) {
       if (!isMountedRef.current) {
@@ -203,9 +202,9 @@ function HomePage() {
       }
       setErrorMessage(toFriendlyError(error));
       setPortfolio({
-        skills: staticProfile.skills || [],
-        projects: staticProfile.projects || [],
-        experiences: staticProfile.experiences || []
+        skills: portfolioData.skills || [],
+        projects: portfolioData.projects || [],
+        experiences: portfolioData.experiences || []
       });
     } finally {
       if (isMountedRef.current) {
@@ -225,10 +224,10 @@ function HomePage() {
 
   const displayPortfolio = useMemo(
     () => ({
-      ...staticProfile,
-      skills: Array.isArray(portfolio.skills) && portfolio.skills.length ? portfolio.skills : staticProfile.skills,
+      ...portfolioData,
+      skills: Array.isArray(portfolio.skills) && portfolio.skills.length ? portfolio.skills : portfolioData.skills,
       projects: normalizeProjects(portfolio.projects),
-      experiences: Array.isArray(portfolio.experiences) && portfolio.experiences.length ? portfolio.experiences : staticProfile.experiences
+      experiences: Array.isArray(portfolio.experiences) && portfolio.experiences.length ? portfolio.experiences : portfolioData.experiences
     }),
     [portfolio]
   );
@@ -719,4 +718,5 @@ function HomePage() {
 }
 
 export default HomePage;
+
 
