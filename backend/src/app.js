@@ -12,12 +12,17 @@ const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
+function normalizeOrigin(origin) {
+  return String(origin || "").trim().replace(/\/+$/, "");
+}
+
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) {
       return callback(null, true);
     }
-    if (env.frontendOrigins.includes("*") || env.frontendOrigins.includes(origin)) {
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (env.frontendOrigins.includes("*") || env.frontendOrigins.includes(normalizedOrigin)) {
       return callback(null, true);
     }
 

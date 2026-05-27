@@ -25,7 +25,7 @@ HỌC VẤN
 Chuyên ngành: Công nghệ Thông tin
 Kỹ sư Công nghệ Thông tin — Dự kiến
 KỸ NĂNG
-Frontend: React.js, Vite, Redux Toolkit, Zustand, React Query, Ant Design, Tailwind CSS, Axios
+Frontend: HTML5, CSS3, JavaScript, React.js, Tailwind CSS, Bootstrap, Ant Design
 Backend: Node.js, Express.js, RESTful API, JWT, RBAC, Socket.IO, node-cron
 Database: MongoDB, Mongoose, SQL Server
 Tools: Git, GitHub, Postman, Figma, Vercel, Render, Playwright, GitHub Actions
@@ -53,7 +53,7 @@ DỰ ÁN
   skills: [
     {
       category: "Frontend",
-      items: ["React.js", "Vite", "Redux Toolkit", "Zustand", "React Query", "Ant Design", "Tailwind CSS", "Axios"]
+      items: ["HTML5", "CSS3", "JavaScript", "React.js", "Tailwind CSS", "Bootstrap", "Ant Design"]
     },
     {
       category: "Backend",

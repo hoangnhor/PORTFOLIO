@@ -3,9 +3,11 @@ import dotenv from "dotenv";
 dotenv.config();
 
 function parseOrigins(value) {
+  const normalizeOrigin = (origin) => String(origin || "").trim().replace(/\/+$/, "");
+
   const rawValue = String(value || "")
     .split(",")
-    .map((item) => item.trim())
+    .map((item) => normalizeOrigin(item))
     .filter(Boolean);
 
   if (rawValue.includes("*")) {

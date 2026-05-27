@@ -28,7 +28,7 @@ export const portfolioData = {
   skills: [
     {
       category: "Frontend",
-      items: ["React.js", "Vite", "Redux Toolkit", "Zustand", "React Query", "Ant Design", "Tailwind CSS", "Axios"]
+      items: ["HTML5", "CSS3", "JavaScript", "React.js", "Tailwind CSS", "Bootstrap", "Ant Design"]
     },
     {
       category: "Backend",

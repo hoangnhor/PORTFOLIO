@@ -10,55 +10,6 @@ const emptyPortfolio = {
   experiences: portfolioData.experiences || []
 };
 
-function normalizeProjectTitle(title) {
-  return String(title || "")
-    .toLowerCase()
-    .replace(/[–—]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeProjects(projects) {
-  if (!Array.isArray(projects)) {
-    return [];
-  }
-
-  const projectPriority = {
-    "cmms - asset & maintenance management system": 1,
-    "cmms – asset & maintenance management system": 1,
-    "petshop - e-commerce pet store website": 2,
-    "petshop – e-commerce pet store website": 2
-  };
-
-  return projects
-    .filter((project) => {
-      const title = normalizeProjectTitle(project?.title);
-      return Boolean(projectPriority[title]);
-    })
-    .sort((a, b) => {
-    const aPriority = projectPriority[normalizeProjectTitle(a?.title)] || 99;
-    const bPriority = projectPriority[normalizeProjectTitle(b?.title)] || 99;
-    return aPriority - bPriority;
-  });
-}
-
-function mergeProjectsWithStatic(apiProjects) {
-  const apiMap = new Map(
-    (Array.isArray(apiProjects) ? apiProjects : []).map((project) => [normalizeProjectTitle(project?.title), project])
-  );
-
-  return (portfolioData.projects || []).map((staticProject) => {
-    const apiProject = apiMap.get(normalizeProjectTitle(staticProject.title));
-    if (!apiProject) {
-      return staticProject;
-    }
-    return {
-      ...apiProject,
-      ...staticProject
-    };
-  });
-}
-
 function splitDisplayName(fullName) {
   const safeName = (fullName || "").trim();
   if (!safeName) {
@@ -182,15 +133,14 @@ function HomePage() {
 
     try {
       const dynamicData = await getPortfolioDynamicSections({ skipCache });
-      const normalizedProjects = normalizeProjects(dynamicData.projects);
-      const mergedProjects = mergeProjectsWithStatic(normalizedProjects);
+      const dynamicProjects = Array.isArray(dynamicData.projects) ? dynamicData.projects : [];
       if (!isMountedRef.current) {
         return;
       }
 
       setPortfolio({
         skills: Array.isArray(dynamicData.skills) && dynamicData.skills.length ? dynamicData.skills : portfolioData.skills || [],
-        projects: mergedProjects.length ? mergedProjects : portfolioData.projects || [],
+        projects: dynamicProjects.length ? dynamicProjects : portfolioData.projects || [],
         experiences:
           Array.isArray(dynamicData.experiences) && dynamicData.experiences.length
             ? dynamicData.experiences
@@ -215,7 +165,7 @@ function HomePage() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    loadProjects(false);
+    loadProjects(true);
 
     return () => {
       isMountedRef.current = false;
@@ -226,7 +176,7 @@ function HomePage() {
     () => ({
       ...portfolioData,
       skills: Array.isArray(portfolio.skills) && portfolio.skills.length ? portfolio.skills : portfolioData.skills,
-      projects: normalizeProjects(portfolio.projects),
+      projects: Array.isArray(portfolio.projects) && portfolio.projects.length ? portfolio.projects : portfolioData.projects,
       experiences: Array.isArray(portfolio.experiences) && portfolio.experiences.length ? portfolio.experiences : portfolioData.experiences
     }),
     [portfolio]

@@ -1,8 +1,8 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
 const PORTFOLIO_ENDPOINT = `${API_BASE_URL}/api/portfolio`;
-const PROJECTS_CACHE_KEY = "portfolio_projects_cache_v3";
-const DYNAMIC_CACHE_KEY = "portfolio_dynamic_sections_cache_v1";
+const PROJECTS_CACHE_KEY = "portfolio_projects_cache_v4";
+const DYNAMIC_CACHE_KEY = "portfolio_dynamic_sections_cache_v2";
 const PROJECTS_CACHE_TTL_MS = 5 * 60 * 1000;
 const PROJECTS_REQUEST_TIMEOUT_MS = 10000;
 
