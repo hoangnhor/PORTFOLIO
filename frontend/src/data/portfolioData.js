@@ -4,7 +4,7 @@ export const portfolioData = {
   intro:
     "Fresher Fullstack Developer, đã xây dựng và triển khai 2 dự án fullstack hoàn chỉnh: CMMS và E-commerce.",
   careerObjective:
-    "Fresher Fullstack Developer với kinh nghiệm thực tế tại môi trường doanh nghiệp. Đã thiết kế và triển khai 2 hệ thống fullstack hoàn chỉnh: CMMS — quản lý tài sản & bảo trì và PetShop — e-commerce website. Có khả năng tham gia toàn bộ vòng đời phát triển sản phẩm, từ xây dựng giao diện, thiết kế schema, phát triển RESTful API, xử lý authentication/authorization đến deploy hệ thống lên môi trường public. Sẵn sàng làm việc full-time trong vai trò Fullstack Developer.",
+    "Fresher Fullstack Developer với kinh nghiệm thực tế tại môi trường doanh nghiệp. Đã thiết kế và triển khai 2 hệ thống fullstack hoàn chỉnh: CMMS — quản lý tài sản & bảo trì và PetShop — e-commerce website. Có khả năng tham gia toàn bộ vòng đời phát triển sản phẩm, từ xây dựng giao diện, thiết kế schema, phát triển RESTful API, xử lý authentication/authorization đến triển khai hệ thống lên môi trường demo/public. Sẵn sàng làm việc full-time trong vai trò Fullstack Developer.",
   location: "TP. Hồ Chí Minh, Việt Nam",
   email: "hoangtranvan999@gmail.com",
   phone: "0837271203",
@@ -102,6 +102,7 @@ export const portfolioData = {
     }
   ]
 };
+
 
 
 

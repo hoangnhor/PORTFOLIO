@@ -10,19 +10,6 @@ const emptyPortfolio = {
   experiences: portfolioData.experiences || []
 };
 
-function splitDisplayName(fullName) {
-  const safeName = (fullName || "").trim();
-  if (!safeName) {
-    return { firstName: "", lastName: "" };
-  }
-
-  const parts = safeName.split(/\s+/);
-  return {
-    firstName: parts[0] || "",
-    lastName: parts.slice(1).join(" ")
-  };
-}
-
 function formatLinkValue(url) {
   if (!url) {
     return "";
@@ -42,6 +29,30 @@ function isHttpUrl(url) {
 
 function localizeRoleText(text) {
   return text || "";
+}
+
+function localizeSkillCategory(category) {
+  if (category === "Tiếng Anh") {
+    return "English";
+  }
+  return category || "";
+}
+
+function localizeSkillItem(category, item) {
+  if (category === "Tiếng Anh") {
+    return "Technical documentation reading";
+  }
+  return item;
+}
+
+function getProjectTypeTag(project, index) {
+  if (String(project?.title || "").toLowerCase().includes("cmms")) {
+    return "INTERNSHIP PROJECT";
+  }
+  if (index === 0) {
+    return "INTERNSHIP PROJECT";
+  }
+  return "PERSONAL PROJECT";
 }
 
 function smoothScrollTo(targetTop, duration = 650) {
@@ -121,7 +132,7 @@ function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("skills");
+  const [activeSection, setActiveSection] = useState("about");
   const isMountedRef = useRef(true);
 
   async function loadProjects(skipCache = false) {
@@ -204,7 +215,7 @@ function HomePage() {
   }, [displayPortfolio]);
 
   useEffect(() => {
-    const sectionIds = ["skills", "projects", "exp", "contact"];
+    const sectionIds = ["about", "skills", "projects", "exp", "contact"];
     const sectionElements = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean);
@@ -263,13 +274,37 @@ function HomePage() {
   ];
   const contactRows = [
     {
-      label: "Email",
+      label: "EMAIL",
       content: displayPortfolio.email ? <a href={`mailto:${displayPortfolio.email}`}>{displayPortfolio.email}</a> : "Chưa cập nhật"
     },
     {
-      label: "Phone",
+      label: "PHONE",
       content: displayPortfolio.phone ? <a href={`tel:${displayPortfolio.phone}`}>{displayPortfolio.phone}</a> : "Chưa cập nhật"
     },
+    ...(githubLink
+      ? [
+          {
+            label: "GITHUB",
+            content: (
+              <a href={githubLink.url} target="_blank" rel="noopener noreferrer">
+                {formatLinkValue(githubLink.url)}
+              </a>
+            )
+          }
+        ]
+      : []),
+    ...(websiteLink
+      ? [
+          {
+            label: "WEBSITE",
+            content: (
+              <a href={websiteLink.url} target="_blank" rel="noopener noreferrer">
+                {formatLinkValue(websiteLink.url)}
+              </a>
+            )
+          }
+        ]
+      : []),
     ...(displayPortfolio.resumeUrl
       ? [
           {
@@ -282,36 +317,12 @@ function HomePage() {
           }
         ]
       : []),
-    ...(websiteLink
-      ? [
-          {
-            label: "Website",
-            content: (
-              <a href={websiteLink.url} target="_blank" rel="noopener noreferrer">
-                {formatLinkValue(websiteLink.url)}
-              </a>
-            )
-          }
-        ]
-      : []),
-    ...(githubLink
-      ? [
-          {
-            label: "GitHub",
-            content: (
-              <a href={githubLink.url} target="_blank" rel="noopener noreferrer">
-                {formatLinkValue(githubLink.url)}
-              </a>
-            )
-          }
-        ]
-      : []),
     {
-      label: "Location",
+      label: "LOCATION",
       content: displayPortfolio.location
     },
     {
-      label: "Availability",
+      label: "STATUS",
       content: "Available full-time — Fresher Fullstack Developer",
       valueClassName: "contact-status"
     }
@@ -362,32 +373,39 @@ function HomePage() {
           />
           <div className={`nav-right ${isMobileMenuOpen ? "is-open" : ""}`}>
             <a
+              href="#about"
+              className={`nav-link ${activeSection === "about" ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, "about")}
+            >
+              About
+            </a>
+            <a
               href="#skills"
               className={`nav-link ${activeSection === "skills" ? "is-active" : ""}`}
               onClick={(event) => handleNavScroll(event, "skills")}
             >
-              Kỹ năng
+              Skills
             </a>
             <a
               href="#projects"
               className={`nav-link ${activeSection === "projects" ? "is-active" : ""}`}
               onClick={(event) => handleNavScroll(event, "projects")}
             >
-              Dự án
+              Projects
             </a>
             <a
               href="#exp"
               className={`nav-link ${activeSection === "exp" ? "is-active" : ""}`}
               onClick={(event) => handleNavScroll(event, "exp")}
             >
-              Kinh nghiệm
+              Experience
             </a>
             <a
               href="#contact"
               className={`nav-link ${activeSection === "contact" ? "is-active" : ""}`}
               onClick={(event) => handleNavScroll(event, "contact")}
             >
-              Liên hệ
+              Contact
             </a>
             <a
               href="#contact"
@@ -420,7 +438,7 @@ function HomePage() {
           </div>
         ) : null}
         <main id="main-content">
-          <div className="hero">
+          <div className="hero" id="about">
           <div className="hero-left fade-in">
             <div className="hero-eyebrow">Portfolio 2026</div>
             <div className="hero-name-block">
@@ -435,15 +453,15 @@ function HomePage() {
             <div className="hero-bottom">
               <div className="hero-stat">
                 <div className="hero-stat-n">{displayPortfolio.projects.length}</div>
-                <div className="hero-stat-l">Hệ thống fullstack</div>
+                <div className="hero-stat-l">Fullstack Systems</div>
               </div>
               <div className="hero-stat">
-                <div className="hero-stat-n">6</div>
-                <div className="hero-stat-l">Module CMMS</div>
+                <div className="hero-stat-n">2</div>
+                <div className="hero-stat-l">Public Demos</div>
               </div>
               <div className="hero-stat">
                 <div className="hero-stat-n">10+</div>
-                <div className="hero-stat-l">MongoDB collections</div>
+                <div className="hero-stat-l">MongoDB Collections</div>
               </div>
             </div>
           </div>
@@ -452,7 +470,11 @@ function HomePage() {
             <p className="hero-desc">{displayPortfolio.careerObjective || displayPortfolio.intro}</p>
             <div className="hero-quick-actions">
               {displayPortfolio.resumeUrl ? (
-                <a href={displayPortfolio.resumeUrl} className="hero-quick-btn hero-quick-btn-primary" target="_blank" rel="noopener noreferrer">
+                <a
+                  href={displayPortfolio.resumeUrl}
+                  className="hero-quick-btn hero-quick-btn-primary"
+                  download="Tran-Van-Hoang-Fresher-Fullstack-Developer-CV.pdf"
+                >
                   Download CV
                 </a>
               ) : null}
@@ -462,7 +484,7 @@ function HomePage() {
                 </a>
               ) : null}
               {displayPortfolio.email ? (
-                <a href={`mailto:${displayPortfolio.email}`} className="hero-quick-btn">
+                <a href="#contact" className="hero-quick-btn" onClick={(event) => handleNavScroll(event, "contact")}>
                   Contact Me
                 </a>
               ) : null}
@@ -501,7 +523,7 @@ function HomePage() {
           <div className="skills-section" id="skills">
           <div className="skills-sidebar fade-in">
             <div>
-              <div className="section-number">02 - Kỹ năng</div>
+              <div className="section-number">02 - Skills</div>
               <div className="section-title-v">
                 Kỹ
                 <br />
@@ -513,13 +535,13 @@ function HomePage() {
             {displayPortfolio.skills.map((skillGroup) => (
               <div className="skill-row" key={skillGroup.category}>
                 <div className="skill-row-head">
-                  <div className="skill-row-cat">{skillGroup.category}</div>
+                  <div className="skill-row-cat">{localizeSkillCategory(skillGroup.category)}</div>
                   <div className="skill-row-line" />
                 </div>
                 <div className="skill-chips">
                   {skillGroup.items.map((item, itemIndex) => (
                     <div className={`chip ${itemIndex < 2 ? "accent" : ""}`} key={`${skillGroup.category}-${item}`}>
-                      <span>{item}</span>
+                      <span>{localizeSkillItem(skillGroup.category, item)}</span>
                     </div>
                   ))}
                 </div>
@@ -530,12 +552,13 @@ function HomePage() {
 
           <div className="projects-section" id="projects">
           <div className="projects-header">
+            <div className="section-number">03 - Projects</div>
             <div className="projects-title">
               Dự án
               <br />
               <em>nổi bật</em>
             </div>
-            <div className="projects-count">{String(displayPortfolio.projects.length).padStart(2, "0")} dự án</div>
+            <div className="projects-count">{String(displayPortfolio.projects.length).padStart(2, "0")} projects</div>
           </div>
 
           {displayPortfolio.projects.map((project, index) => {
@@ -545,7 +568,7 @@ function HomePage() {
                 <div className="project-num-col">{String(index + 1).padStart(2, "0")}</div>
                 <div className="project-main-col">
                   <div className="project-tag-row">
-                    <span className={`project-tag ${project.featured ? "red" : ""}`}>{project.featured ? "Thực tế" : "Dự án"}</span>
+                    <span className={`project-tag ${project.featured ? "red" : ""}`}>{getProjectTypeTag(project, index)}</span>
                     <span className="project-tag">{localizeRoleText(project.role) || "Đang cập nhật"}</span>
                     <span className="project-tag">{project.period || "Chưa cập nhật"}</span>
                   </div>
@@ -592,7 +615,7 @@ function HomePage() {
 
           <div className="exp-section" id="exp">
           <div className="exp-sidebar fade-in">
-            <div className="section-number">03 - Kinh nghiệm</div>
+            <div className="section-number">04 - Experience</div>
             <div className="section-title-v">
               Kinh
               <br />
@@ -638,7 +661,7 @@ function HomePage() {
             </div>
             {displayPortfolio.email ? (
               <a href={`mailto:${displayPortfolio.email}`} className="contact-cta">
-                Gửi email ngay →
+                Send Email →
               </a>
             ) : (
               <span className="contact-cta">Email đang cập nhật</span>
