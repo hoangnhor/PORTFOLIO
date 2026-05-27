@@ -317,7 +317,7 @@ function HomePage() {
       content: displayPortfolio.email ? <a href={`mailto:${displayPortfolio.email}`}>{displayPortfolio.email}</a> : "Chưa cập nhật"
     },
     {
-      label: "Điện thoại",
+      label: "Phone",
       content: displayPortfolio.phone ? <a href={`tel:${displayPortfolio.phone}`}>{displayPortfolio.phone}</a> : "Chưa cập nhật"
     },
     ...(displayPortfolio.resumeUrl
@@ -357,12 +357,12 @@ function HomePage() {
         ]
       : []),
     {
-      label: "Địa điểm",
+      label: "Location",
       content: displayPortfolio.location
     },
     {
-      label: "Trạng thái",
-      content: "Sẵn sàng làm việc full-time — Fresher Fullstack Developer",
+      label: "Availability",
+      content: "Available full-time — Fresher Fullstack Developer",
       valueClassName: "contact-status"
     }
   ];
