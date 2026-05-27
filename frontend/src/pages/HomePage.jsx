@@ -422,7 +422,7 @@ function HomePage() {
         <main id="main-content">
           <div className="hero">
           <div className="hero-left fade-in">
-            <div className="hero-eyebrow">Hồ sơ 2026</div>
+            <div className="hero-eyebrow">Portfolio 2026</div>
             <div className="hero-name-block">
               <div>
                 <div className="hero-fname">{displayPortfolio.fullName}</div>
@@ -491,7 +491,7 @@ function HomePage() {
           </div>
 
           <div className="divider-bar">
-          <div className="divider-text">Công nghệ</div>
+          <div className="divider-text">Technologies</div>
           <div className="divider-ticker">
             <span className="ticker-item">{tickerText}</span>
             <span className="ticker-item">{tickerText}</span>
@@ -668,5 +668,6 @@ function HomePage() {
 }
 
 export default HomePage;
+
 
 
