@@ -28,7 +28,7 @@ export const portfolioData = {
   skills: [
     {
       category: "Frontend",
-      items: ["HTML5", "CSS3", "JavaScript", "React.js", "Tailwind CSS", "Bootstrap", "Ant Design"]
+      items: ["React.js", "JavaScript", "HTML5", "CSS3", "Tailwind CSS", "Ant Design", "Bootstrap"]
     },
     {
       category: "Backend",
@@ -40,10 +40,10 @@ export const portfolioData = {
     },
     {
       category: "Tools",
-      items: ["Git", "GitHub", "Postman", "Figma", "Vercel", "Render", "Playwright", "GitHub Actions"]
+      items: ["Git", "GitHub", "Postman", "Vercel", "Render", "Playwright", "GitHub Actions", "Figma"]
     },
     {
-      category: "English",
+      category: "Tiếng Anh",
       items: ["Đọc hiểu tài liệu kỹ thuật tiếng Anh"]
     }
   ],
@@ -102,6 +102,7 @@ export const portfolioData = {
     }
   ]
 };
+
 
 
 

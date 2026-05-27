@@ -25,11 +25,11 @@ HỌC VẤN
 Chuyên ngành: Công nghệ Thông tin
 Kỹ sư Công nghệ Thông tin — Dự kiến
 KỸ NĂNG
-Frontend: HTML5, CSS3, JavaScript, React.js, Tailwind CSS, Bootstrap, Ant Design
+Frontend: React.js, JavaScript, HTML5, CSS3, Tailwind CSS, Ant Design, Bootstrap
 Backend: Node.js, Express.js, RESTful API, JWT, RBAC, Socket.IO, node-cron
 Database: MongoDB, Mongoose, SQL Server
-Tools: Git, GitHub, Postman, Figma, Vercel, Render, Playwright, GitHub Actions
-English: Đọc hiểu tài liệu kỹ thuật tiếng Anh
+Tools: Git, GitHub, Postman, Vercel, Render, Playwright, GitHub Actions, Figma
+Tiếng Anh: Đọc hiểu tài liệu kỹ thuật tiếng Anh
 KINH NGHIỆM LÀM VIỆC
 01/2026 - 05/2026 TTP Solutions JSC Company - Intern Fullstack Developer
 DỰ ÁN
@@ -53,7 +53,7 @@ DỰ ÁN
   skills: [
     {
       category: "Frontend",
-      items: ["HTML5", "CSS3", "JavaScript", "React.js", "Tailwind CSS", "Bootstrap", "Ant Design"]
+      items: ["React.js", "JavaScript", "HTML5", "CSS3", "Tailwind CSS", "Ant Design", "Bootstrap"]
     },
     {
       category: "Backend",
@@ -65,10 +65,10 @@ DỰ ÁN
     },
     {
       category: "Tools",
-      items: ["Git", "GitHub", "Postman", "Figma", "Vercel", "Render", "Playwright", "GitHub Actions"]
+      items: ["Git", "GitHub", "Postman", "Vercel", "Render", "Playwright", "GitHub Actions", "Figma"]
     },
     {
-      category: "English",
+      category: "Tiếng Anh",
       items: ["Đọc hiểu tài liệu kỹ thuật tiếng Anh"]
     }
   ],
@@ -127,6 +127,7 @@ DỰ ÁN
     }
   ]
 };
+
 
 
 
