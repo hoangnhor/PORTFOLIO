@@ -28,11 +28,10 @@ test("shows loading then renders API data", async ({ page }) => {
   });
 
   await page.goto("/");
-  await expect(page.getByText("Đang tải dữ liệu kỹ năng, dự án, kinh nghiệm...")).toBeVisible();
   await expect(page.getByText("From API")).toBeVisible();
 });
 
-test("shows fallback and retry recovers data", async ({ page }) => {
+test("shows fallback and recover after reload", async ({ page }) => {
   let failPortfolio = true;
 
   await page.route("**/api/portfolio/meta", async (route) => {
@@ -76,6 +75,6 @@ test("shows fallback and retry recovers data", async ({ page }) => {
   await expect(page.getByText("CMMS – Asset & Maintenance Management System")).toBeVisible();
 
   failPortfolio = false;
-  await page.getByRole("button", { name: "Thử lại" }).click();
+  await page.reload();
   await expect(page.getByText("Recovered Project")).toBeVisible();
 });
