@@ -1,197 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "../assets/styles/homePage.css";
-import { portfolioData } from "../data/portfolioData";
 import MainLayout from "../layouts/MainLayout";
-import { getPortfolioDynamicSections } from "../services/portfolioApi";
-
-const emptyPortfolio = {
-  skills: portfolioData.skills || [],
-  projects: portfolioData.projects || [],
-  experiences: portfolioData.experiences || []
-};
-
-function formatLinkValue(url) {
-  if (!url) {
-    return "";
-  }
-  if (url.startsWith("mailto:")) {
-    return url.slice(7);
-  }
-  if (url.startsWith("tel:")) {
-    return url.slice(4);
-  }
-  return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
-}
-
-function isHttpUrl(url) {
-  return /^https?:\/\//i.test(String(url || "").trim());
-}
-
-function localizeRoleText(text) {
-  return text || "";
-}
-
-function localizeSkillCategory(category) {
-  if (category === "Tiếng Anh") {
-    return "English";
-  }
-  return category || "";
-}
-
-function localizeSkillItem(category, item) {
-  if (category === "Tiếng Anh") {
-    return "Technical documentation reading";
-  }
-  return item;
-}
-
-function getProjectTypeTag(project, index) {
-  if (String(project?.title || "").toLowerCase().includes("cmms")) {
-    return "INTERNSHIP PROJECT";
-  }
-  if (index === 0) {
-    return "INTERNSHIP PROJECT";
-  }
-  return "PERSONAL PROJECT";
-}
-
-function smoothScrollTo(targetTop, duration = 650) {
-  const startY = window.scrollY;
-  const deltaY = targetTop - startY;
-  if (Math.abs(deltaY) < 2) {
-    return;
-  }
-
-  let startTime = null;
-  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-
-  const step = (timestamp) => {
-    if (startTime === null) {
-      startTime = timestamp;
-    }
-    const elapsed = timestamp - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const eased = easeInOutCubic(progress);
-    window.scrollTo(0, startY + deltaY * eased);
-
-    if (progress < 1) {
-      window.requestAnimationFrame(step);
-    }
-  };
-
-  window.requestAnimationFrame(step);
-}
-
-function getProjectActionLinks(project) {
-  const links = Array.isArray(project?.links)
-    ? project.links.filter((link) => isHttpUrl(link?.url))
-    : [];
-
-  const demoLink = links.find((link) => /demo|live/i.test(String(link?.label || ""))) || null;
-  const githubCandidates = links.filter((link) => {
-    const label = String(link?.label || "").toLowerCase();
-    const url = String(link?.url || "").toLowerCase();
-    return label.includes("github") || url.includes("github.com");
-  });
-  const githubFe = githubCandidates.find((link) => /fe|frontend/i.test(String(link?.label || ""))) || null;
-  const githubBe = githubCandidates.find((link) => /be|backend/i.test(String(link?.label || ""))) || null;
-  const githubGeneral = githubCandidates.find((link) => /^github$/i.test(String(link?.label || "").trim())) || null;
-
-  const actions = [];
-  if (demoLink) {
-    actions.push({ label: "Demo", url: demoLink.url, kind: "demo" });
-  }
-  if (githubFe) {
-    actions.push({ label: "Frontend", url: githubFe.url, kind: "frontend" });
-  }
-  if (githubBe && githubBe.url !== githubFe?.url) {
-    actions.push({ label: "Backend", url: githubBe.url, kind: "backend" });
-  }
-  if (!githubFe && !githubBe && githubGeneral) {
-    actions.push({ label: "GitHub", url: githubGeneral.url, kind: "github" });
-  }
-  if (!actions.length && links[0]) {
-    actions.push({ label: links[0].label || "Link", url: links[0].url, kind: "link" });
-  }
-
-  return actions;
-}
-
-function toFriendlyError(error) {
-  if (error?.code === "TIMEOUT") {
-    return "Kết nối đến máy chủ quá chậm. Vui lòng thử lại.";
-  }
-  if (error?.code === "HTTP_ERROR") {
-    return `Không tải được dữ liệu dự án (HTTP ${error.status || "?"}).`;
-  }
-  return "Không tải được dữ liệu dự án từ cơ sở dữ liệu.";
-}
+import { useActiveSection } from "../hooks/useActiveSection";
+import { useOverflowGuard } from "../hooks/useOverflowGuard";
+import { usePortfolioData } from "../hooks/usePortfolioData";
+import { HOME_UI } from "../config/homeUiConfig";
+import ContactSection from "../components/home/ContactSection";
+import ExperienceSection from "../components/home/ExperienceSection";
+import HeroSection from "../components/home/HeroSection";
+import ProjectsSection from "../components/home/ProjectsSection";
+import SkillsSection from "../components/home/SkillsSection";
+import {
+  formatLinkValue,
+  getProjectActionLinks,
+  getProjectTypeTag,
+  isHttpUrl,
+  localizeRoleText,
+  localizeSkillCategory,
+  localizeSkillItem,
+  smoothScrollTo
+} from "../utils/homePageUtils";
 
 function HomePage() {
-  const [portfolio, setPortfolio] = useState(emptyPortfolio);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("about");
-  const isMountedRef = useRef(true);
-
-  async function loadProjects(skipCache = false) {
-    if (!isMountedRef.current) {
-      return;
-    }
-    setIsLoading(true);
-    setErrorMessage("");
-
-    try {
-      const dynamicData = await getPortfolioDynamicSections({ skipCache });
-      const dynamicProjects = Array.isArray(dynamicData.projects) ? dynamicData.projects : [];
-      if (!isMountedRef.current) {
-        return;
-      }
-
-      setPortfolio({
-        skills: Array.isArray(dynamicData.skills) && dynamicData.skills.length ? dynamicData.skills : portfolioData.skills || [],
-        projects: dynamicProjects.length ? dynamicProjects : portfolioData.projects || [],
-        experiences:
-          Array.isArray(dynamicData.experiences) && dynamicData.experiences.length
-            ? dynamicData.experiences
-            : portfolioData.experiences || []
-      });
-    } catch (error) {
-      if (!isMountedRef.current) {
-        return;
-      }
-      setErrorMessage(toFriendlyError(error));
-      setPortfolio({
-        skills: portfolioData.skills || [],
-        projects: portfolioData.projects || [],
-        experiences: portfolioData.experiences || []
-      });
-    } finally {
-      if (isMountedRef.current) {
-        setIsLoading(false);
-      }
-    }
-  }
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    loadProjects(true);
-
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  const displayPortfolio = useMemo(
-    () => ({
-      ...portfolioData,
-      skills: Array.isArray(portfolio.skills) && portfolio.skills.length ? portfolio.skills : portfolioData.skills,
-      projects: Array.isArray(portfolio.projects) && portfolio.projects.length ? portfolio.projects : portfolioData.projects,
-      experiences: Array.isArray(portfolio.experiences) && portfolio.experiences.length ? portfolio.experiences : portfolioData.experiences
-    }),
-    [portfolio]
-  );
+  const { activeSection, setActiveSection } = useActiveSection();
+  const hasHorizontalOverflow = useOverflowGuard();
+  const { displayPortfolio, isLoading, errorMessage, usingLocalFallback, loadProjects } = usePortfolioData();
 
   useEffect(() => {
     const fadeInElements = document.querySelectorAll(".fade-in");
@@ -213,36 +47,6 @@ function HomePage() {
     fadeInElements.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
   }, [displayPortfolio]);
-
-  useEffect(() => {
-    const sectionIds = ["about", "skills", "projects", "exp", "contact"];
-    const sectionElements = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-
-    if (!sectionElements.length) {
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-
-        if (visibleEntries.length) {
-          setActiveSection(visibleEntries[0].target.id);
-        }
-      },
-      {
-        rootMargin: "-30% 0px -55% 0px",
-        threshold: [0.15, 0.35, 0.6]
-      }
-    );
-
-    sectionElements.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, []);
 
   const techList = useMemo(() => {
     const allItems = displayPortfolio.skills.flatMap((skill) => (Array.isArray(skill.items) ? skill.items : []));
@@ -372,47 +176,22 @@ function HomePage() {
             onClick={() => setIsMobileMenuOpen(false)}
           />
           <div className={`nav-right ${isMobileMenuOpen ? "is-open" : ""}`}>
+            {HOME_UI.navItems.map((item) => (
+              <a
+                key={item.key}
+                href={`#${item.target}`}
+                className={`nav-link ${activeSection === item.key ? "is-active" : ""}`}
+                onClick={(event) => handleNavScroll(event, item.target)}
+              >
+                {item.label}
+              </a>
+            ))}
             <a
-              href="#about"
-              className={`nav-link ${activeSection === "about" ? "is-active" : ""}`}
-              onClick={(event) => handleNavScroll(event, "about")}
+              href={`#${HOME_UI.navCta.target}`}
+              className={`nav-cta ${activeSection === HOME_UI.navCta.target ? "is-active" : ""}`}
+              onClick={(event) => handleNavScroll(event, HOME_UI.navCta.target)}
             >
-              About
-            </a>
-            <a
-              href="#skills"
-              className={`nav-link ${activeSection === "skills" ? "is-active" : ""}`}
-              onClick={(event) => handleNavScroll(event, "skills")}
-            >
-              Skills
-            </a>
-            <a
-              href="#projects"
-              className={`nav-link ${activeSection === "projects" ? "is-active" : ""}`}
-              onClick={(event) => handleNavScroll(event, "projects")}
-            >
-              Projects
-            </a>
-            <a
-              href="#exp"
-              className={`nav-link ${activeSection === "exp" ? "is-active" : ""}`}
-              onClick={(event) => handleNavScroll(event, "exp")}
-            >
-              Experience
-            </a>
-            <a
-              href="#contact"
-              className={`nav-link ${activeSection === "contact" ? "is-active" : ""}`}
-              onClick={(event) => handleNavScroll(event, "contact")}
-            >
-              Contact
-            </a>
-            <a
-              href="#contact"
-              className={`nav-cta ${activeSection === "contact" ? "is-active" : ""}`}
-              onClick={(event) => handleNavScroll(event, "contact")}
-            >
-              Hire Me
+              {HOME_UI.navCta.label}
             </a>
           </div>
         </nav>
@@ -425,6 +204,7 @@ function HomePage() {
         {!isLoading && errorMessage ? (
           <div className="data-status data-status-error" role="alert" aria-live="assertive">
             {errorMessage}
+            <span style={{ marginLeft: 12 }}>{HOME_UI.apiStatus.fallback}</span>
             <button
               type="button"
               className="project-action-link"
@@ -437,80 +217,26 @@ function HomePage() {
             </button>
           </div>
         ) : null}
+        {!isLoading && usingLocalFallback && !errorMessage ? (
+          <div className="data-status data-status-error" role="status" aria-live="polite">
+            {HOME_UI.apiStatus.fallback}
+          </div>
+        ) : null}
+        {import.meta.env.DEV && hasHorizontalOverflow ? (
+          <div className="data-status data-status-error" role="status" aria-live="polite">
+            Responsive warning: horizontal overflow detected.
+          </div>
+        ) : null}
         <main id="main-content">
-          <div className="hero" id="about">
-          <div className="hero-left fade-in">
-            <div className="hero-eyebrow">Portfolio 2026</div>
-            <div className="hero-name-block">
-              <div>
-                <div className="hero-fname">{displayPortfolio.fullName}</div>
-              </div>
-              <div className="hero-label">
-                <div className="hero-label-text">{localizedHeadline}</div>
-                <div className="hero-label-sub">{displayPortfolio.location}</div>
-              </div>
-            </div>
-            <div className="hero-bottom">
-              <div className="hero-stat">
-                <div className="hero-stat-n">{displayPortfolio.projects.length}</div>
-                <div className="hero-stat-l">Fullstack Systems</div>
-              </div>
-              <div className="hero-stat">
-                <div className="hero-stat-n">2</div>
-                <div className="hero-stat-l">Public Demos</div>
-              </div>
-              <div className="hero-stat">
-                <div className="hero-stat-n">10+</div>
-                <div className="hero-stat-l">MongoDB Collections</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="hero-right fade-in">
-            <p className="hero-desc">{displayPortfolio.careerObjective || displayPortfolio.intro}</p>
-            <div className="hero-quick-actions">
-              {displayPortfolio.resumeUrl ? (
-                <a
-                  href={displayPortfolio.resumeUrl}
-                  className="hero-quick-btn hero-quick-btn-primary"
-                  download="Tran-Van-Hoang-Fresher-Fullstack-Developer-CV.pdf"
-                >
-                  Download CV
-                </a>
-              ) : null}
-              {githubLink ? (
-                <a href={githubLink.url} className="hero-quick-btn" target="_blank" rel="noopener noreferrer">
-                  View GitHub
-                </a>
-              ) : null}
-              {displayPortfolio.email ? (
-                <a href="#contact" className="hero-quick-btn" onClick={(event) => handleNavScroll(event, "contact")}>
-                  Contact Me
-                </a>
-              ) : null}
-            </div>
-            <div className="hero-links">
-              {heroLinks.map((link) => {
-                const openInNewTab = isHttpUrl(link.url);
-                return (
-                  <a
-                    key={`${link.label}-${link.url}`}
-                    href={link.url}
-                    className="hero-link"
-                    target={openInNewTab ? "_blank" : undefined}
-                    rel={openInNewTab ? "noopener noreferrer" : undefined}
-                  >
-                    <div className="hero-link-left">
-                      <span className="hero-link-label">{link.label}</span>
-                      <span className="hero-link-val">{formatLinkValue(link.url)}</span>
-                    </div>
-                    <span className="hero-link-arrow">↗</span>
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-          </div>
+          <HeroSection
+            displayPortfolio={displayPortfolio}
+            localizedHeadline={localizedHeadline}
+            githubLink={githubLink}
+            heroLinks={heroLinks}
+            formatLinkValue={formatLinkValue}
+            isHttpUrl={isHttpUrl}
+            handleNavScroll={handleNavScroll}
+          />
 
           <div className="divider-bar">
           <div className="divider-text">Technologies</div>
@@ -520,165 +246,22 @@ function HomePage() {
           </div>
           </div>
 
-          <div className="skills-section" id="skills">
-          <div className="skills-sidebar fade-in">
-            <div>
-              <div className="section-number">02 - Skills</div>
-              <div className="section-title-v">
-                Kỹ
-                <br />
-                <em>năng</em>
-              </div>
-            </div>
-          </div>
-          <div className="skills-body">
-            {displayPortfolio.skills.map((skillGroup) => (
-              <div className="skill-row" key={skillGroup.category}>
-                <div className="skill-row-head">
-                  <div className="skill-row-cat">{localizeSkillCategory(skillGroup.category)}</div>
-                  <div className="skill-row-line" />
-                </div>
-                <div className="skill-chips">
-                  {skillGroup.items.map((item, itemIndex) => (
-                    <div className={`chip ${itemIndex < 2 ? "accent" : ""}`} key={`${skillGroup.category}-${item}`}>
-                      <span>{localizeSkillItem(skillGroup.category, item)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          </div>
+          <SkillsSection
+            displayPortfolio={displayPortfolio}
+            localizeSkillCategory={localizeSkillCategory}
+            localizeSkillItem={localizeSkillItem}
+          />
 
-          <div className="projects-section" id="projects">
-          <div className="projects-header">
-            <div className="section-number">03 - Projects</div>
-            <div className="projects-title">
-              Dự án
-              <br />
-              <em>nổi bật</em>
-            </div>
-            <div className="projects-count">{String(displayPortfolio.projects.length).padStart(2, "0")} projects</div>
-          </div>
+          <ProjectsSection
+            displayPortfolio={displayPortfolio}
+            getProjectActionLinks={getProjectActionLinks}
+            getProjectTypeTag={getProjectTypeTag}
+            localizeRoleText={localizeRoleText}
+          />
 
-          {displayPortfolio.projects.map((project, index) => {
-            const actionLinks = getProjectActionLinks(project);
-            return (
-              <div className="project-item" key={`${project.title}-${index}`}>
-                <div className="project-num-col">{String(index + 1).padStart(2, "0")}</div>
-                <div className="project-main-col">
-                  <div className="project-tag-row">
-                    <span className={`project-tag ${project.featured ? "red" : ""}`}>{getProjectTypeTag(project, index)}</span>
-                    <span className="project-tag">{localizeRoleText(project.role) || "Đang cập nhật"}</span>
-                    <span className="project-tag">{project.period || "Chưa cập nhật"}</span>
-                  </div>
-                  <div className="project-name">{project.title}</div>
-                  <p className="project-desc">{project.summary}</p>
-                  {Array.isArray(project.highlights) && project.highlights.length ? (
-                    <div className="project-highlights">
-                      {project.highlights.map((highlight, highlightIndex) => (
-                        <div className="project-highlight" key={`${project.title}-highlight-${highlightIndex}`}>
-                          {highlight}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                  <div className="project-stack-row">
-                    {(project.stack || []).map((stackItem) => (
-                      <span className="stack-tag" key={`${project.title}-${stackItem}`}>
-                        {stackItem}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="project-action-col">
-                  <div className="project-action-list">
-                    {actionLinks.map((action) => (
-                      <a
-                        key={`${project.title}-${action.kind}-${action.url}`}
-                        href={action.url}
-                        className="project-action-link"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <span>{action.label}</span>
-                        <span className="project-action-arrow">↗</span>
-                      </a>
-                    ))}
-                    {!actionLinks.length ? <span className="project-action-link project-action-link-disabled">Chưa có link</span> : null}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          </div>
+          <ExperienceSection expEntries={expEntries} localizeRoleText={localizeRoleText} />
 
-          <div className="exp-section" id="exp">
-          <div className="exp-sidebar fade-in">
-            <div className="section-number">04 - Experience</div>
-            <div className="section-title-v">
-              Kinh
-              <br />
-              <em>nghiệm</em>
-            </div>
-          </div>
-          <div className="exp-body">
-            {expEntries.map((entry, index) => (
-              <div className="exp-entry" key={`${entry.company}-${index}`}>
-                <div className="exp-meta">
-                  <div className="exp-co">{entry.company}</div>
-                  <div className="exp-period">{entry.period}</div>
-                </div>
-                <div className="exp-role">{localizeRoleText(entry.role)}</div>
-                <div className="exp-bullets">
-                  {entry.description ? <div className="exp-bullet">{entry.description}</div> : null}
-                  {(entry.details || []).map((detail, detailIndex) => (
-                    <div className="exp-bullet" key={`${entry.company}-detail-${detailIndex}`}>
-                      {detail}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          </div>
-
-          <div className="contact-section" id="contact">
-          <div className="contact-left fade-in">
-            <div>
-              <div className="contact-big">
-                Cùng
-                <br />
-                <em>xây dựng</em>
-                <br />
-                sản phẩm.
-              </div>
-              <p className="contact-sub">
-                Tìm kiếm cơ hội Fresher Fullstack Developer.
-                <br />
-                Sẵn sàng làm việc full-time.
-              </p>
-            </div>
-            {displayPortfolio.email ? (
-              <a href={`mailto:${displayPortfolio.email}`} className="contact-cta">
-                Send Email →
-              </a>
-            ) : (
-              <span className="contact-cta">Email đang cập nhật</span>
-            )}
-          </div>
-
-          <div className="contact-right fade-in">
-            <div className="contact-info-rows">
-              {contactRows.map((row) => (
-                <div className="contact-row" key={row.label}>
-                  <div className="contact-row-label">{row.label}</div>
-                  <div className={`contact-row-val ${row.valueClassName || ""}`.trim()}>{row.content}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          <ContactSection displayPortfolio={displayPortfolio} contactRows={contactRows} />
         </main>
 
         <footer>

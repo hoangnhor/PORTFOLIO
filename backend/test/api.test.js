@@ -18,10 +18,30 @@ test("GET /api/health returns success payload", async () => {
   assert.equal(typeof response.body.time, "string");
 });
 
+test("GET /api/ready returns not_ready when db is unavailable", async () => {
+  const response = await request(app).get("/api/ready");
+  assert.equal(response.status, 503);
+  assert.equal(response.body.status, "not_ready");
+  assert.equal(response.body.dbStatus, "disconnected");
+  assert.equal(typeof response.body.requestId, "string");
+});
+
 test("GET /api/portfolio returns safe response when db is unavailable", async () => {
   mongoose.set("bufferTimeoutMS", 1);
   const customRequestId = "test-request-id-portfolio";
   const response = await request(app).get("/api/portfolio").set("x-request-id", customRequestId);
+
+  assert.ok(response.status >= 400);
+  assert.equal(response.headers["x-request-id"], customRequestId);
+  assert.equal(typeof response.body?.message, "string");
+  assert.notEqual(response.body.message.trim(), "");
+  assert.equal(response.body.requestId, customRequestId);
+});
+
+test("GET /api/portfolio/meta returns safe response when db is unavailable", async () => {
+  mongoose.set("bufferTimeoutMS", 1);
+  const customRequestId = "test-request-id-portfolio-meta";
+  const response = await request(app).get("/api/portfolio/meta").set("x-request-id", customRequestId);
 
   assert.ok(response.status >= 400);
   assert.equal(response.headers["x-request-id"], customRequestId);

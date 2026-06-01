@@ -1,15 +1,22 @@
-import { getPortfolioFromDb, upsertPortfolioToDb } from "../services/portfolio.service.js";
+import { getPortfolioFromDb, getPortfolioMetaFromDb, upsertPortfolioToDb } from "../services/portfolio.service.js";
 
 export async function getPortfolio(req, res, next) {
   try {
     const portfolio = await getPortfolioFromDb();
-
-    if (!portfolio) {
-      return res.status(404).json({ message: "Portfolio not found in database" });
-    }
-
-    res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    res.setHeader("Cache-Control", "no-store");
     return res.json(portfolio);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+export async function getPortfolioMeta(req, res, next) {
+  try {
+    const meta = await getPortfolioMetaFromDb();
+    res.setHeader("Cache-Control", "no-store");
+    return res.json({
+      updatedAt: meta.updatedAt || null
+    });
   } catch (error) {
     return next(error);
   }

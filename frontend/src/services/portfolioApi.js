@@ -1,51 +1,10 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/$/, "");
 
 const PORTFOLIO_ENDPOINT = `${API_BASE_URL}/api/portfolio`;
-const PROJECTS_CACHE_KEY = "portfolio_projects_cache_v4";
-const DYNAMIC_CACHE_KEY = "portfolio_dynamic_sections_cache_v2";
-const PROJECTS_CACHE_TTL_MS = 5 * 60 * 1000;
-const PROJECTS_REQUEST_TIMEOUT_MS = 10000;
+const PORTFOLIO_META_ENDPOINT = `${API_BASE_URL}/api/portfolio/meta`;
+const REQUEST_TIMEOUT_MS = 10000;
 
-function readProjectsCache() {
-  try {
-    const raw = localStorage.getItem(PROJECTS_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.projects) || typeof parsed.updatedAt !== "number") {
-      localStorage.removeItem(PROJECTS_CACHE_KEY);
-      return null;
-    }
-
-    if (Date.now() - parsed.updatedAt > PROJECTS_CACHE_TTL_MS) {
-      localStorage.removeItem(PROJECTS_CACHE_KEY);
-      return null;
-    }
-
-    return parsed.projects;
-  } catch {
-    localStorage.removeItem(PROJECTS_CACHE_KEY);
-    return null;
-  }
-}
-
-function writeProjectsCache(projects) {
-  try {
-    localStorage.setItem(
-      PROJECTS_CACHE_KEY,
-      JSON.stringify({
-        projects,
-        updatedAt: Date.now()
-      })
-    );
-  } catch {
-    // ignore cache write errors
-  }
-}
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = PROJECTS_REQUEST_TIMEOUT_MS) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -66,16 +25,29 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = PROJECTS_REQUEST_
   }
 }
 
-export async function getPortfolioProjects({ skipCache = false } = {}) {
-  const cached = skipCache ? null : readProjectsCache();
-  if (cached) {
-    return cached;
+async function fetchPortfolio(skipCache = false) {
+  if (!skipCache) {
+    try {
+      await fetchWithTimeout(
+        PORTFOLIO_META_ENDPOINT,
+        {
+          headers: {
+            Accept: "application/json"
+          },
+          cache: "no-store"
+        },
+        2500
+      );
+    } catch {
+      // ignore meta probe errors; main request below is source of truth
+    }
   }
 
   const response = await fetchWithTimeout(PORTFOLIO_ENDPOINT, {
     headers: {
       Accept: "application/json"
-    }
+    },
+    cache: "no-store"
   });
 
   if (!response.ok) {
@@ -85,77 +57,20 @@ export async function getPortfolioProjects({ skipCache = false } = {}) {
     throw httpError;
   }
 
-  const data = await response.json();
-  const projects = Array.isArray(data?.projects) ? data.projects : [];
-  writeProjectsCache(projects);
-  return projects;
+  const payload = await response.json();
+  return payload;
 }
 
-function readDynamicCache() {
-  try {
-    const raw = localStorage.getItem(DYNAMIC_CACHE_KEY);
-    if (!raw) {
-      return null;
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed.updatedAt !== "number" || typeof parsed.data !== "object") {
-      localStorage.removeItem(DYNAMIC_CACHE_KEY);
-      return null;
-    }
-
-    if (Date.now() - parsed.updatedAt > PROJECTS_CACHE_TTL_MS) {
-      localStorage.removeItem(DYNAMIC_CACHE_KEY);
-      return null;
-    }
-
-    return parsed.data;
-  } catch {
-    localStorage.removeItem(DYNAMIC_CACHE_KEY);
-    return null;
-  }
-}
-
-function writeDynamicCache(data) {
-  try {
-    localStorage.setItem(
-      DYNAMIC_CACHE_KEY,
-      JSON.stringify({
-        data,
-        updatedAt: Date.now()
-      })
-    );
-  } catch {
-    // ignore cache write errors
-  }
+export async function getPortfolioProjects({ skipCache = false } = {}) {
+  const data = await fetchPortfolio(skipCache);
+  return Array.isArray(data?.projects) ? data.projects : [];
 }
 
 export async function getPortfolioDynamicSections({ skipCache = false } = {}) {
-  const cached = skipCache ? null : readDynamicCache();
-  if (cached) {
-    return cached;
-  }
-
-  const response = await fetchWithTimeout(PORTFOLIO_ENDPOINT, {
-    headers: {
-      Accept: "application/json"
-    }
-  });
-
-  if (!response.ok) {
-    const httpError = new Error(`Failed to fetch portfolio: ${response.status}`);
-    httpError.code = "HTTP_ERROR";
-    httpError.status = response.status;
-    throw httpError;
-  }
-
-  const data = await response.json();
-  const dynamicSections = {
+  const data = await fetchPortfolio(skipCache);
+  return {
     skills: Array.isArray(data?.skills) ? data.skills : [],
     projects: Array.isArray(data?.projects) ? data.projects : [],
     experiences: Array.isArray(data?.experiences) ? data.experiences : []
   };
-
-  writeDynamicCache(dynamicSections);
-  return dynamicSections;
 }

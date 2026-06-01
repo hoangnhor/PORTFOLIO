@@ -1277,9 +1277,11 @@
   }
 }
 
-@supports (height: 100dvh) {
-  .hero {
-    height: calc(100dvh - 104px);
+@media (min-width: 901px) {
+  @supports (height: 100dvh) {
+    .hero {
+      height: calc(100dvh - 104px);
+    }
   }
 }
 
@@ -1446,6 +1448,14 @@
     font-size: var(--fs-body-sm);
   }
 
+  .hero-right {
+    overflow: visible;
+  }
+
+  .hero-right::before {
+    display: none;
+  }
+
   .project-desc {
     font-size: var(--fs-body-sm);
   }
@@ -1514,6 +1524,15 @@
     min-width: 0;
     text-align: center;
     white-space: nowrap;
+  }
+
+  .hero-links {
+    display: flex;
+    margin-top: 8px;
+  }
+
+  .hero-link {
+    padding: 8px 0;
   }
 
   .exp-meta {

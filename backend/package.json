@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "bootstrap": "node src/services/portfolio.bootstrap.js",
     "seed": "node src/services/portfolio.seed.js",
+    "seed:reset": "node -e \"process.env.SEED_RESET='true'; import('./src/services/portfolio.seed.js');\"",
+    "cleanup:singleton": "node src/services/portfolio.singleton.cleanup.js",
     "lint": "eslint \"src/**/*.js\" \"test/**/*.js\"",
-    "test": "node -e \"const cp=require('node:child_process');const run=(args)=>cp.spawnSync(process.execPath,args,{stdio:'inherit'});let r=run(['--test','--test-isolation=none','test/api.test.js']);if(r.status!==0){r=run(['--test','test/api.test.js']);}process.exit(r.status??1);\"",
+    "test": "node -e \"const cp=require('node:child_process');const files=['test/api.test.js','test/portfolio.validator.test.js','test/portfolio.integration.test.js'];const run=(args)=>cp.spawnSync(process.execPath,args,{stdio:'inherit'});let r=run(['--test','--test-isolation=none',...files]);if(r.status!==0){r=run(['--test',...files]);}process.exit(r.status??1);\"",
     "test:smoke": "node --input-type=module -e \"import('./src/config/env.js').then(({validateEnv}) => { validateEnv(); console.log('smoke:ok'); }).catch((error) => { console.error(error); process.exit(1); })\""
   },
   "dependencies": {
@@ -20,8 +23,9 @@
     "mongoose": "^8.6.2"
   },
   "devDependencies": {
+    "eslint": "^9.38.0",
+    "mongodb-memory-server": "^11.2.0",
     "nodemon": "^3.1.4",
-    "supertest": "^7.2.2",
-    "eslint": "^9.38.0"
+    "supertest": "^7.2.2"
   }
 }

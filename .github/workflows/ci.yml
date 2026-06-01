@@ -33,11 +33,17 @@ jobs:
       - name: Install backend dependencies
         run: npm --prefix backend ci
 
+      - name: Install Playwright browser
+        run: npx --prefix frontend playwright install --with-deps chromium
+
       - name: Frontend build
         run: npm --prefix frontend run build
 
       - name: Frontend lint
         run: npm --prefix frontend run lint
+
+      - name: Frontend UI test
+        run: npm --prefix frontend run test:ci
 
       - name: Backend lint
         run: npm --prefix backend run lint

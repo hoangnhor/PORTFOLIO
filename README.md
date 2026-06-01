@@ -1,12 +1,17 @@
 # Portfolio Fullstack (React + Node.js + MongoDB)
 [![CI](https://github.com/hoangnhor/PORTFOLIO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hoangnhor/PORTFOLIO/actions/workflows/ci.yml)
 
-Production-aware personal portfolio project with:
+Production-aware personal portfolio system:
 - Frontend: React + Vite
 - Backend: Express + Mongoose
 - Database: MongoDB
 
-## 1) Repository Structure
+## Tech Stack
+- Node.js 20+
+- npm 10+
+- MongoDB (local or cloud)
+
+## Repository Structure
 ```text
 .
 |-- backend/
@@ -20,49 +25,38 @@ Production-aware personal portfolio project with:
 |   |   |-- repositories/
 |   |   |-- routes/
 |   |   |-- services/
-|   |   |-- validators/
+|   |   |-- utils/
+|   |   `-- validators/
 |   |-- test/
 |   |-- .env.example
-|   |-- .gitignore
 |   `-- package.json
 |-- frontend/
 |   |-- src/
+|   |-- tests/
 |   |-- public/
 |   |-- .env.example
-|   |-- .gitignore
 |   `-- package.json
 |-- .github/workflows/ci.yml
 |-- package.json
 `-- README.md
 ```
 
-## 2) Prerequisites
-- Node.js 20+
-- npm 10+
-- MongoDB (local or remote)
-
-## 3) Installation
-From repository root:
+## Setup
+Từ thư mục root:
 
 ```bash
 npm run install:all
 ```
 
-If needed:
-```bash
-npm run install:be
-npm run install:fe
-```
-
-## 4) Environment Variables
-Use `.env.example` as the source of truth.
+## Environment Variables
+Copy từ file `.env.example`.
 
 ### Backend (`backend/.env`)
 ```env
 NODE_ENV=development
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/hoang_portfolio
-ADMIN_TOKEN=
+ADMIN_TOKEN=replace-with-strong-secret
 FRONTEND_ORIGINS=http://localhost:5173
 ```
 
@@ -71,29 +65,46 @@ FRONTEND_ORIGINS=http://localhost:5173
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
-## 5) Run the Project
-Run both apps:
+## Run
+Chạy cả FE + BE:
 ```bash
 npm run dev
 ```
 
-Run separately:
+Chạy riêng:
 ```bash
 npm run dev:be
 npm run dev:fe
 ```
 
-Seed backend data:
+## Data Bootstrap & Maintenance
+Bootstrap dữ liệu mặc định nếu DB trống:
+```bash
+npm run bootstrap:be
+```
+
+Seed dữ liệu portfolio:
 ```bash
 npm run seed:be
 ```
 
-## 6) API Endpoints
-- `GET /api/health`
-- `GET /api/portfolio`
-- `PUT /api/portfolio` (requires `x-admin-token` or `Authorization: Bearer <token>`)
+Cleanup dữ liệu dư, giữ singleton portfolio:
+```bash
+npm run cleanup:be:singleton
+```
 
-Example update:
+## API Endpoints
+- `GET /api/health`
+- `GET /api/ready`
+- `GET /api/portfolio`
+- `GET /api/portfolio/meta`
+- `PUT /api/portfolio` (requires admin token)
+
+Header auth cho `PUT /api/portfolio`:
+- `x-admin-token: <ADMIN_TOKEN>`
+- hoặc `Authorization: Bearer <ADMIN_TOKEN>`
+
+Ví dụ update:
 ```bash
 curl -X PUT http://localhost:5000/api/portfolio \
   -H "Content-Type: application/json" \
@@ -101,7 +112,7 @@ curl -X PUT http://localhost:5000/api/portfolio \
   -d "{\"headline\":\"Fullstack Web Developer\"}"
 ```
 
-## 7) Verification Commands
+## Quality Verification
 ### Frontend
 ```bash
 npm --prefix frontend run lint
@@ -116,49 +127,33 @@ npm --prefix backend run test
 npm --prefix backend run test:smoke
 ```
 
-## 8) CI (GitHub Actions)
+Ghi chú integration test Mongo:
+- `backend/test/portfolio.integration.test.js` chỉ chạy khi set `ENABLE_INTEGRATION_MONGO=true`.
+
+## CI
 Workflow: `.github/workflows/ci.yml`
 
-CI runs on `push` and `pull_request`:
-1. `npm ci` (root)
-2. `npm --prefix frontend ci`
-3. `npm --prefix backend ci`
-4. `npm --prefix frontend run build`
-5. `npm --prefix frontend run lint`
-6. `npm --prefix backend run lint`
-7. `npm --prefix backend run test`
-8. `npm --prefix backend run test:smoke`
+CI chạy:
+1. Install dependencies (root/frontend/backend)
+2. Install Playwright Chromium
+3. Frontend lint/build/test
+4. Backend lint/test/smoke
 
-## 9) Health Check and Operational Notes
-- Health endpoint: `GET /api/health`
-- Backend includes request tracing with `x-request-id`.
-- Error responses are production-safe and include `requestId` for troubleshooting.
+## Operational Notes
+- Error response luôn có `requestId`.
+- Request logging dùng JSON structured logs.
+- Logger có redaction cho key nhạy cảm (`authorization`, `x-admin-token`, `cookie`, `token`, `password`, `secret`).
+- `GET /api/ready` trả `503` khi DB chưa connected.
 
-## 10) Deployment Checklist
-- [ ] Configure all required env vars from `.env.example`.
-- [ ] Set a strong `ADMIN_TOKEN`.
-- [ ] Ensure MongoDB connectivity and credentials.
-- [ ] Run verification commands locally (lint/build/test/smoke).
-- [ ] Ensure CI workflow passes on target branch.
-- [ ] Verify `GET /api/health` returns `status: ok`.
-- [ ] Verify frontend can fetch backend through `VITE_API_BASE_URL`.
-- [ ] Confirm CORS origins via `FRONTEND_ORIGINS`.
-- [ ] Keep `.env` files out of version control.
+## Deployment Checklist
+- [ ] Set env vars đầy đủ theo `.env.example`
+- [ ] Set `ADMIN_TOKEN` mạnh
+- [ ] Verify Mongo connectivity
+- [ ] Run lint/build/test trước deploy
+- [ ] Verify `/api/health` và `/api/ready`
+- [ ] Verify FE gọi đúng `VITE_API_BASE_URL`
+- [ ] Review CORS bằng `FRONTEND_ORIGINS`
 
-## 11) Live Demo / Media
-- Live demo: [https://tranvanhoang.vercel.app/](https://tranvanhoang.vercel.app/)
-- GitHub Actions: [CI workflow runs](https://github.com/hoangnhor/PORTFOLIO/actions)
-
-Media assets should be added under `docs/screenshots/` (or `docs/media/`) and referenced here:
-```md
-![Landing](docs/screenshots/landing.png)
-![Mobile](docs/screenshots/mobile.png)
-![Admin Update Flow](docs/screenshots/admin-update-flow.png)
-![CI Passing](docs/screenshots/ci-passing.png)
-![Demo GIF](docs/media/demo.gif)
-```
-
-## 12) Known Limitations (Honest Status)
-- Frontend test runner is not configured yet; frontend `test:ci` currently documents/skips this gap.
-- Frontend lint/build and backend lint/test/smoke are in place.
-- This repo has practical production-minded safeguards, but it is still a portfolio project and should be validated further before high-traffic production use.
+## Live
+- Demo: [https://tranvanhoang.vercel.app/](https://tranvanhoang.vercel.app/)
+- CI runs: [https://github.com/hoangnhor/PORTFOLIO/actions](https://github.com/hoangnhor/PORTFOLIO/actions)

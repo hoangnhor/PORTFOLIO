@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{js,jsx}\"",
-    "test:ci": "node -e \"console.log('No frontend test runner configured yet; skipping test:ci.')\""
+    "test:ci": "playwright test --reporter=line --workers=1",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "@studio-freight/lenis": "^1.0.42",
@@ -16,6 +17,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.2",
     "eslint": "^9.38.0"

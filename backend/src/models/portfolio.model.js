@@ -59,13 +59,15 @@ const educationSchema = new Schema(
     school: { type: String, required: true, trim: true, maxlength: 140 },
     period: { type: String, required: true, trim: true, maxlength: 80 },
     major: { type: String, default: "", trim: true, maxlength: 140 },
-    track: { type: String, default: "", trim: true, maxlength: 200 }
+    track: { type: String, default: "", trim: true, maxlength: 200 },
+    details: { type: [String], default: [] }
   },
   { _id: false }
 );
 
 const portfolioSchema = new Schema(
   {
+    key: { type: String, required: true, unique: true, default: "main", immutable: true },
     fullName: { type: String, required: true, trim: true, maxlength: 120 },
     headline: { type: String, required: true, trim: true, maxlength: 120 },
     intro: { type: String, required: true, trim: true, maxlength: 2000 },

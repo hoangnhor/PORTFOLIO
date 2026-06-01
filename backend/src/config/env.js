@@ -31,7 +31,9 @@ export const env = {
   port: parsePort(process.env.PORT || 5000),
   mongoUri: process.env.MONGO_URI || "mongodb://127.0.0.1:27017/hoang_portfolio",
   adminToken: String(process.env.ADMIN_TOKEN || "").trim(),
-  frontendOrigins: parseOrigins(process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "http://localhost:5173")
+  frontendOrigins: parseOrigins(
+    process.env.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGIN || "http://localhost:5173,http://localhost:5174"
+  )
 };
 
 export function validateEnv() {

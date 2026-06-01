@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { logger } from "../utils/logger.js";
 
 function buildRequestId() {
   return randomUUID();
@@ -18,7 +19,7 @@ export function requestLogger(req, res, next) {
 
   res.on("finish", () => {
     const durationMs = Date.now() - startedAt;
-    console.info("[API_REQUEST]", {
+    logger.info("api_request", {
       requestId: req.requestId || null,
       method: req.method,
       path: req.originalUrl,

@@ -16,13 +16,21 @@ function normalizeOrigin(origin) {
   return String(origin || "").trim().replace(/\/+$/, "");
 }
 
+function isLocalhostOrigin(origin) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
+
 const corsOptions = {
   origin(origin, callback) {
     if (!origin) {
       return callback(null, true);
     }
     const normalizedOrigin = normalizeOrigin(origin);
-    if (env.frontendOrigins.includes("*") || env.frontendOrigins.includes(normalizedOrigin)) {
+    if (
+      env.frontendOrigins.includes("*") ||
+      env.frontendOrigins.includes(normalizedOrigin) ||
+      (!env.isProduction && isLocalhostOrigin(normalizedOrigin))
+    ) {
       return callback(null, true);
     }
 
@@ -31,7 +39,7 @@ const corsOptions = {
     return callback(corsError);
   },
   methods: ["GET", "PUT", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "x-admin-token", "Authorization"],
+  allowedHeaders: ["Content-Type", "x-admin-token", "Authorization", "Cache-Control"],
   maxAge: 86400
 };
 
@@ -51,6 +59,25 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     dbStatus: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    time: new Date().toISOString()
+  });
+});
+
+app.get("/api/ready", (req, res) => {
+  const dbConnected = mongoose.connection.readyState === 1;
+  if (!dbConnected) {
+    return res.status(503).json({
+      status: "not_ready",
+      dbStatus: "disconnected",
+      requestId: req.requestId || null,
+      time: new Date().toISOString()
+    });
+  }
+
+  return res.json({
+    status: "ready",
+    dbStatus: "connected",
+    requestId: req.requestId || null,
     time: new Date().toISOString()
   });
 });
