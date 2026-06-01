@@ -1,17 +1,30 @@
-# Portfolio Fullstack (React + Node.js + MongoDB)
+# PORTFOLIO
+
 [![CI](https://github.com/hoangnhor/PORTFOLIO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hoangnhor/PORTFOLIO/actions/workflows/ci.yml)
 
-Production-aware personal portfolio system:
+Personal fullstack portfolio system, production-aware.
+
 - Frontend: React + Vite
-- Backend: Express + Mongoose
+- Backend: Node.js + Express + Mongoose
 - Database: MongoDB
 
-## Tech Stack
+## 1) Features
+
+- Public portfolio UI (skills, projects, experience, contact)
+- Backend API for portfolio read/update
+- Admin-protected update endpoint (`PUT /api/portfolio`)
+- Structured logging + request id
+- Security baseline: `helmet`, CORS allowlist, rate limiting, payload validation
+- Local fallback data on frontend when API is unavailable
+
+## 2) Tech Requirements
+
 - Node.js 20+
 - npm 10+
 - MongoDB (local or cloud)
 
-## Repository Structure
+## 3) Project Structure
+
 ```text
 .
 |-- backend/
@@ -32,8 +45,8 @@ Production-aware personal portfolio system:
 |   `-- package.json
 |-- frontend/
 |   |-- src/
-|   |-- tests/
 |   |-- public/
+|   |-- tests/
 |   |-- .env.example
 |   `-- package.json
 |-- .github/workflows/ci.yml
@@ -41,17 +54,23 @@ Production-aware personal portfolio system:
 `-- README.md
 ```
 
-## Setup
-Từ thư mục root:
+## 4) Setup
+
+Install all dependencies from root:
 
 ```bash
 npm run install:all
 ```
 
-## Environment Variables
-Copy từ file `.env.example`.
+Create env files:
+
+- `backend/.env` from `backend/.env.example`
+- `frontend/.env` from `frontend/.env.example`
+
+## 5) Environment Variables
 
 ### Backend (`backend/.env`)
+
 ```env
 NODE_ENV=development
 PORT=5000
@@ -61,50 +80,74 @@ FRONTEND_ORIGINS=http://localhost:5173
 ```
 
 ### Frontend (`frontend/.env`)
+
 ```env
 VITE_API_BASE_URL=http://localhost:5000
 ```
 
-## Run
-Chạy cả FE + BE:
+## 6) Run
+
+Run both FE + BE:
+
 ```bash
 npm run dev
 ```
 
-Chạy riêng:
+Run separately:
+
 ```bash
 npm run dev:be
 npm run dev:fe
 ```
 
-## Data Bootstrap & Maintenance
-Bootstrap dữ liệu mặc định nếu DB trống:
+## 7) Scripts
+
+### Root
+
 ```bash
+npm run install:all
+npm run dev
+npm run build
 npm run bootstrap:be
-```
-
-Seed dữ liệu portfolio:
-```bash
 npm run seed:be
-```
-
-Cleanup dữ liệu dư, giữ singleton portfolio:
-```bash
 npm run cleanup:be:singleton
 ```
 
-## API Endpoints
+### Backend
+
+```bash
+npm --prefix backend run dev
+npm --prefix backend run lint
+npm --prefix backend run test
+npm --prefix backend run test:smoke
+```
+
+### Frontend
+
+```bash
+npm --prefix frontend run dev
+npm --prefix frontend run lint
+npm --prefix frontend run build
+npm --prefix frontend run test:ci
+```
+
+## 8) API
+
+Base URL (local): `http://localhost:5000`
+
 - `GET /api/health`
 - `GET /api/ready`
 - `GET /api/portfolio`
 - `GET /api/portfolio/meta`
-- `PUT /api/portfolio` (requires admin token)
+- `PUT /api/portfolio` (admin token required)
 
-Header auth cho `PUT /api/portfolio`:
+Auth header for update:
+
 - `x-admin-token: <ADMIN_TOKEN>`
-- hoặc `Authorization: Bearer <ADMIN_TOKEN>`
+- or `Authorization: Bearer <ADMIN_TOKEN>`
 
-Ví dụ update:
+Example update request:
+
 ```bash
 curl -X PUT http://localhost:5000/api/portfolio \
   -H "Content-Type: application/json" \
@@ -112,48 +155,66 @@ curl -X PUT http://localhost:5000/api/portfolio \
   -d "{\"headline\":\"Fullstack Web Developer\"}"
 ```
 
-## Quality Verification
-### Frontend
+## 9) Data Bootstrap / Seed
+
+Bootstrap default portfolio when database is empty:
+
+```bash
+npm run bootstrap:be
+```
+
+Seed/update portfolio data:
+
+```bash
+npm run seed:be
+```
+
+Cleanup old duplicated portfolio documents and keep singleton:
+
+```bash
+npm run cleanup:be:singleton
+```
+
+## 10) Testing & Verification
+
+Recommended checks before deploy:
+
 ```bash
 npm --prefix frontend run lint
 npm --prefix frontend run build
 npm --prefix frontend run test:ci
-```
-
-### Backend
-```bash
 npm --prefix backend run lint
 npm --prefix backend run test
 npm --prefix backend run test:smoke
 ```
 
-Ghi chú integration test Mongo:
-- `backend/test/portfolio.integration.test.js` chỉ chạy khi set `ENABLE_INTEGRATION_MONGO=true`.
+Note: Mongo integration tests in `backend/test/portfolio.integration.test.js` run only when:
 
-## CI
-Workflow: `.github/workflows/ci.yml`
+```bash
+ENABLE_INTEGRATION_MONGO=true npm --prefix backend run test
+```
 
-CI chạy:
-1. Install dependencies (root/frontend/backend)
-2. Install Playwright Chromium
-3. Frontend lint/build/test
-4. Backend lint/test/smoke
+## 11) CI
 
-## Operational Notes
-- Error response luôn có `requestId`.
-- Request logging dùng JSON structured logs.
-- Logger có redaction cho key nhạy cảm (`authorization`, `x-admin-token`, `cookie`, `token`, `password`, `secret`).
-- `GET /api/ready` trả `503` khi DB chưa connected.
+GitHub Actions workflow: `.github/workflows/ci.yml`
 
-## Deployment Checklist
-- [ ] Set env vars đầy đủ theo `.env.example`
-- [ ] Set `ADMIN_TOKEN` mạnh
-- [ ] Verify Mongo connectivity
-- [ ] Run lint/build/test trước deploy
-- [ ] Verify `/api/health` và `/api/ready`
-- [ ] Verify FE gọi đúng `VITE_API_BASE_URL`
-- [ ] Review CORS bằng `FRONTEND_ORIGINS`
+Current pipeline includes:
 
-## Live
-- Demo: [https://tranvanhoang.vercel.app/](https://tranvanhoang.vercel.app/)
+1. Install dependencies
+2. Frontend lint/build/test
+3. Backend lint/test/smoke
+
+## 12) Deployment Checklist
+
+- [ ] Set all required env vars
+- [ ] Use strong `ADMIN_TOKEN`
+- [ ] Confirm Mongo connectivity
+- [ ] Verify `GET /api/health` and `GET /api/ready`
+- [ ] Confirm FE uses correct `VITE_API_BASE_URL`
+- [ ] Run lint/test/build before release
+
+## 13) Live
+
+- Website: [https://tranvanhoang.vercel.app/](https://tranvanhoang.vercel.app/)
+- Repository: [https://github.com/hoangnhor/PORTFOLIO](https://github.com/hoangnhor/PORTFOLIO)
 - CI runs: [https://github.com/hoangnhor/PORTFOLIO/actions](https://github.com/hoangnhor/PORTFOLIO/actions)

@@ -18,6 +18,21 @@ function toFriendlyError(error) {
   return "Không tải được dữ liệu động từ cơ sở dữ liệu.";
 }
 
+function mergeProjectsWithLocalFallback(dynamicProjects = []) {
+  const localProjects = Array.isArray(portfolioData.projects) ? portfolioData.projects : [];
+  const normalizedDynamic = Array.isArray(dynamicProjects) ? dynamicProjects : [];
+  const existingTitles = new Set(
+    normalizedDynamic.map((project) => String(project?.title || "").trim().toLowerCase()).filter(Boolean)
+  );
+
+  const missingLocalProjects = localProjects.filter((project) => {
+    const titleKey = String(project?.title || "").trim().toLowerCase();
+    return titleKey && !existingTitles.has(titleKey);
+  });
+
+  return [...normalizedDynamic, ...missingLocalProjects];
+}
+
 export function usePortfolioData() {
   const [portfolio, setPortfolio] = useState(emptyPortfolio);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +56,7 @@ export function usePortfolioData() {
       setUsingLocalFallback(false);
       setPortfolio({
         skills: Array.isArray(dynamicData.skills) ? dynamicData.skills : [],
-        projects: Array.isArray(dynamicData.projects) ? dynamicData.projects : [],
+        projects: mergeProjectsWithLocalFallback(dynamicData.projects),
         experiences: Array.isArray(dynamicData.experiences) ? dynamicData.experiences : []
       });
     } catch (error) {
