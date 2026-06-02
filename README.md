@@ -212,6 +212,7 @@ Current pipeline includes:
 - [ ] Verify `GET /api/health` and `GET /api/ready`
 - [ ] Confirm FE uses correct `VITE_API_BASE_URL`
 - [ ] Run lint/test/build before release
+- [ ] Add GitHub secret `RENDER_HEALTH_URL` for keep-alive ping workflow
 
 ## 13) Live
 

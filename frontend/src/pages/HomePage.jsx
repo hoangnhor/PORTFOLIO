@@ -25,7 +25,7 @@ function HomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { activeSection, setActiveSection } = useActiveSection();
   const hasHorizontalOverflow = useOverflowGuard();
-  const { displayPortfolio, isLoading, errorMessage, usingLocalFallback, loadProjects } = usePortfolioData();
+  const { displayPortfolio } = usePortfolioData();
 
   useEffect(() => {
     const fadeInElements = document.querySelectorAll(".fade-in");
@@ -196,32 +196,6 @@ function HomePage() {
           </div>
         </nav>
 
-        {isLoading ? (
-          <div className="data-status" role="status" aria-live="polite">
-            Đang tải dữ liệu kỹ năng, dự án, kinh nghiệm...
-          </div>
-        ) : null}
-        {!isLoading && errorMessage ? (
-          <div className="data-status data-status-error" role="alert" aria-live="assertive">
-            {errorMessage}
-            <span style={{ marginLeft: 12 }}>{HOME_UI.apiStatus.fallback}</span>
-            <button
-              type="button"
-              className="project-action-link"
-              onClick={() => loadProjects(true)}
-              style={{ marginLeft: 12 }}
-              aria-label="Thử tải lại dữ liệu kỹ năng, dự án và kinh nghiệm"
-              disabled={isLoading}
-            >
-              Thử lại
-            </button>
-          </div>
-        ) : null}
-        {!isLoading && usingLocalFallback && !errorMessage ? (
-          <div className="data-status data-status-error" role="status" aria-live="polite">
-            {HOME_UI.apiStatus.fallback}
-          </div>
-        ) : null}
         {import.meta.env.DEV && hasHorizontalOverflow ? (
           <div className="data-status data-status-error" role="status" aria-live="polite">
             Responsive warning: horizontal overflow detected.
