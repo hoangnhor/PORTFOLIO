@@ -70,8 +70,6 @@ test("shows fallback and recover after reload", async ({ page }) => {
   });
 
   await page.goto("/");
-  await expect(page.getByText("Không tải được dữ liệu dự án")).toBeVisible();
-  await expect(page.getByText("Đang hiển thị dữ liệu local fallback.")).toBeVisible();
   await expect(page.getByText("CMMS – Asset & Maintenance Management System")).toBeVisible();
 
   failPortfolio = false;

@@ -50,16 +50,6 @@ function writeCachedPortfolioSnapshot(snapshot) {
   }
 }
 
-function toFriendlyError(error) {
-  if (error?.code === "TIMEOUT") {
-    return "Kết nối đến máy chủ quá chậm. Vui lòng thử lại.";
-  }
-  if (error?.code === "HTTP_ERROR") {
-    return `Không tải được dữ liệu dự án (HTTP ${error.status || "?"}).`;
-  }
-  return "Không tải được dữ liệu động từ cơ sở dữ liệu.";
-}
-
 function mergeProjectsWithLocalFallback(dynamicProjects = []) {
   const localProjects = Array.isArray(portfolioData.projects) ? portfolioData.projects : [];
   const normalizedDynamic = Array.isArray(dynamicProjects) ? dynamicProjects : [];
@@ -96,8 +86,6 @@ export function usePortfolioData() {
     return buildPortfolioFromSnapshot(readCachedPortfolioSnapshot());
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [usingLocalFallback, setUsingLocalFallback] = useState(false);
   const isMountedRef = useRef(true);
 
   async function loadProjects(skipCache = false) {
@@ -105,7 +93,6 @@ export function usePortfolioData() {
       return;
     }
     setIsLoading(true);
-    setErrorMessage("");
 
     try {
       const dynamicData = await getPortfolioDynamicSections({ skipCache });
@@ -113,7 +100,6 @@ export function usePortfolioData() {
         return;
       }
 
-      setUsingLocalFallback(false);
       setPortfolio((current) => ({
         ...current,
         skills: Array.isArray(dynamicData.skills) ? dynamicData.skills : current.skills,
@@ -121,12 +107,10 @@ export function usePortfolioData() {
         experiences: Array.isArray(dynamicData.experiences) ? dynamicData.experiences : current.experiences
       }));
       writeCachedPortfolioSnapshot(dynamicData);
-    } catch (error) {
+    } catch {
       if (!isMountedRef.current) {
         return;
       }
-      setErrorMessage(toFriendlyError(error));
-      setUsingLocalFallback(true);
       if (typeof window !== "undefined") {
         const cachedSnapshot = readCachedPortfolioSnapshot();
         if (cachedSnapshot) {
@@ -164,8 +148,6 @@ export function usePortfolioData() {
   return {
     displayPortfolio,
     isLoading,
-    errorMessage,
-    usingLocalFallback,
     loadProjects
   };
 }
