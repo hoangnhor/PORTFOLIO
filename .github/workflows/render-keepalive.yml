@@ -10,15 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render health endpoint
-        env:
-          RENDER_HEALTH_URL: ${{ secrets.RENDER_HEALTH_URL }}
         run: |
-          if [ -z "$RENDER_HEALTH_URL" ]; then
-            echo "RENDER_HEALTH_URL secret is missing"
-            exit 1
-          fi
-
           curl -fsS --max-time 20 \
             -H "Cache-Control: no-cache" \
             -H "Pragma: no-cache" \
-            "$RENDER_HEALTH_URL"
+            "https://portfolio-hqw1.onrender.com/api/health"
