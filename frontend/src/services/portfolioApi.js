@@ -25,24 +25,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
   }
 }
 
-async function fetchPortfolio(skipCache = false) {
-  if (!skipCache) {
-    try {
-      await fetchWithTimeout(
-        PORTFOLIO_META_ENDPOINT,
-        {
-          headers: {
-            Accept: "application/json"
-          },
-          cache: "no-store"
-        },
-        2500
-      );
-    } catch {
-      // ignore meta probe errors; main request below is source of truth
-    }
-  }
-
+async function fetchPortfolio() {
   const response = await fetchWithTimeout(PORTFOLIO_ENDPOINT, {
     headers: {
       Accept: "application/json"
@@ -61,13 +44,37 @@ async function fetchPortfolio(skipCache = false) {
   return payload;
 }
 
-export async function getPortfolioProjects({ skipCache = false } = {}) {
-  const data = await fetchPortfolio(skipCache);
+export async function getPortfolioMeta() {
+  const response = await fetchWithTimeout(PORTFOLIO_META_ENDPOINT, {
+    headers: {
+      Accept: "application/json"
+    },
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const httpError = new Error(`Failed to fetch portfolio meta: ${response.status}`);
+    httpError.code = "HTTP_ERROR";
+    httpError.status = response.status;
+    throw httpError;
+  }
+
+  const payload = await response.json();
+  return payload && typeof payload === "object" ? payload : {};
+}
+
+export async function getPortfolioData() {
+  const data = await fetchPortfolio();
+  return data && typeof data === "object" ? data : {};
+}
+
+export async function getPortfolioProjects() {
+  const data = await fetchPortfolio();
   return Array.isArray(data?.projects) ? data.projects : [];
 }
 
-export async function getPortfolioDynamicSections({ skipCache = false } = {}) {
-  const data = await fetchPortfolio(skipCache);
+export async function getPortfolioDynamicSections() {
+  const data = await fetchPortfolio();
   return {
     skills: Array.isArray(data?.skills) ? data.skills : [],
     projects: Array.isArray(data?.projects) ? data.projects : [],

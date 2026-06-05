@@ -13,6 +13,7 @@ import SkillsSection from "../components/home/SkillsSection";
 import {
   formatLinkValue,
   getProjectActionLinks,
+  getLinkByKind,
   getProjectTypeTag,
   isHttpUrl,
   localizeRoleText,
@@ -21,7 +22,7 @@ import {
   smoothScrollTo
 } from "../utils/homePageUtils";
 
-function HomePage() {
+  function HomePage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { activeSection, setActiveSection } = useActiveSection();
   const hasHorizontalOverflow = useOverflowGuard();
@@ -46,7 +47,7 @@ function HomePage() {
 
     fadeInElements.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
-  }, [displayPortfolio]);
+  }, []);
 
   const techList = useMemo(() => {
     const allItems = displayPortfolio.skills.flatMap((skill) => (Array.isArray(skill.items) ? skill.items : []));
@@ -56,12 +57,22 @@ function HomePage() {
   const tickerText = techList.length ? `${techList.join(" · ")} ·` : "Đang cập nhật ·";
   const localizedHeadline = localizeRoleText(displayPortfolio.headline);
 
-  const githubLink = displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("github")) || null;
-  const websiteLink = displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("website")) || null;
+  const githubLink =
+    getLinkByKind(displayPortfolio.socials, "github") ||
+    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("github")) ||
+    null;
+  const websiteLink =
+    getLinkByKind(displayPortfolio.socials, "website") ||
+    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("website")) ||
+    null;
   const cmmsDemoLink =
-    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("cmms demo")) || null;
+    getLinkByKind(displayPortfolio.socials, "cmms-demo") ||
+    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("cmms demo")) ||
+    null;
   const petshopDemoLink =
-    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("petshop demo")) || null;
+    getLinkByKind(displayPortfolio.socials, "petshop-demo") ||
+    displayPortfolio.socials.find((item) => String(item.label || "").toLowerCase().includes("petshop demo")) ||
+    null;
   const emailLink = displayPortfolio.email ? { label: "Email", url: `mailto:${displayPortfolio.email}` } : null;
   const cvLink = displayPortfolio.resumeUrl ? { label: "CV", url: displayPortfolio.resumeUrl } : null;
   const heroLinks = [githubLink, cmmsDemoLink, petshopDemoLink, cvLink, emailLink].filter(Boolean);

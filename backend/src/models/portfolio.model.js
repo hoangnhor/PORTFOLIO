@@ -7,6 +7,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const socialSchema = new Schema(
   {
+    kind: { type: String, default: "", trim: true, maxlength: 40 },
     label: { type: String, required: true, trim: true, maxlength: 80 },
     url: { type: String, required: true, trim: true, match: urlRegex }
   },
@@ -23,6 +24,7 @@ const skillSchema = new Schema(
 
 const linkSchema = new Schema(
   {
+    kind: { type: String, default: "", trim: true, maxlength: 40 },
     label: { type: String, required: true, trim: true, maxlength: 80 },
     url: { type: String, required: true, trim: true, match: urlRegex }
   },

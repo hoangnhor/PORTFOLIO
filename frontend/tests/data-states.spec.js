@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+const PORTFOLIO_CACHE_KEY = "portfolio:full:v3";
+
 test("shows loading then renders API data", async ({ page }) => {
   await page.route("**/api/portfolio/meta", async (route) => {
     await route.fulfill({
@@ -75,4 +77,57 @@ test("shows fallback and recover after reload", async ({ page }) => {
   failPortfolio = false;
   await page.reload();
   await expect(page.getByText("Recovered Project")).toBeVisible();
+});
+
+test("refreshes stale cached portfolio when server updatedAt changes", async ({ page }) => {
+  await page.addInitScript(
+    ({ cacheKey, snapshot }) => {
+      window.localStorage.setItem(cacheKey, JSON.stringify(snapshot));
+    },
+    {
+      cacheKey: PORTFOLIO_CACHE_KEY,
+      snapshot: {
+        fullName: "Cached User",
+        headline: "Cached headline",
+        intro: "Cached intro",
+        email: "cached@example.com",
+        location: "Cached location",
+        updatedAt: "2025-01-01T00:00:00.000Z",
+        socials: [],
+        education: [],
+        skills: [],
+        projects: [{ title: "Cached Project", summary: "cached", stack: [], links: [], highlights: [] }],
+        experiences: []
+      }
+    }
+  );
+
+  await page.route("**/api/portfolio/meta", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ updatedAt: "2026-01-01T00:00:00.000Z" })
+    });
+  });
+  await page.route("**/api/portfolio", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        fullName: "Fresh User",
+        headline: "Fresh headline",
+        intro: "Fresh intro",
+        email: "fresh@example.com",
+        location: "Fresh location",
+        socials: [],
+        education: [],
+        skills: [],
+        projects: [{ title: "Fresh Project", summary: "fresh", stack: [], links: [], highlights: [] }],
+        experiences: []
+      })
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("Fresh Project")).toBeVisible();
 });

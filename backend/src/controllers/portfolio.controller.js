@@ -1,4 +1,4 @@
-import { getPortfolioFromDb, getPortfolioMetaFromDb, upsertPortfolioToDb } from "../services/portfolio.service.js";
+import { getPortfolioFromDb, getPortfolioMetaFromDb } from "../services/portfolio.service.js";
 
 export async function getPortfolio(req, res, next) {
   try {
@@ -17,16 +17,6 @@ export async function getPortfolioMeta(req, res, next) {
     return res.json({
       updatedAt: meta.updatedAt || null
     });
-  } catch (error) {
-    return next(error);
-  }
-}
-
-export async function upsertPortfolio(req, res, next) {
-  try {
-    const payload = req.body || {};
-    const portfolio = await upsertPortfolioToDb(payload);
-    return res.json(portfolio);
   } catch (error) {
     return next(error);
   }

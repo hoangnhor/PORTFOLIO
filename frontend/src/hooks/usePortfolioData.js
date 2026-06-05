@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { portfolioData } from "../data/portfolioData";
-import { getPortfolioDynamicSections } from "../services/portfolioApi";
+import { getPortfolioData, getPortfolioMeta } from "../services/portfolioApi";
 
-const PORTFOLIO_CACHE_KEY = "portfolio:dynamic-sections:v1";
+const PORTFOLIO_CACHE_KEY = "portfolio:full:v3";
+let bootstrapPortfolioPromise = null;
 
 function buildLocalPortfolio() {
   return {
@@ -10,6 +11,21 @@ function buildLocalPortfolio() {
     skills: Array.isArray(portfolioData.skills) ? portfolioData.skills : [],
     projects: Array.isArray(portfolioData.projects) ? portfolioData.projects : [],
     experiences: Array.isArray(portfolioData.experiences) ? portfolioData.experiences : []
+  };
+}
+
+function normalizePortfolioSnapshot(snapshot) {
+  const localBase = buildLocalPortfolio();
+  const source = snapshot && typeof snapshot === "object" ? snapshot : {};
+
+  return {
+    ...localBase,
+    ...source,
+    socials: Array.isArray(source.socials) ? source.socials : localBase.socials,
+    education: Array.isArray(source.education) ? source.education : localBase.education,
+    skills: Array.isArray(source.skills) ? source.skills : localBase.skills,
+    projects: Array.isArray(source.projects) ? source.projects : localBase.projects,
+    experiences: Array.isArray(source.experiences) ? source.experiences : localBase.experiences
   };
 }
 
@@ -25,11 +41,7 @@ function readCachedPortfolioSnapshot() {
       return null;
     }
 
-    return {
-      skills: Array.isArray(parsedValue.skills) ? parsedValue.skills : [],
-      projects: Array.isArray(parsedValue.projects) ? parsedValue.projects : [],
-      experiences: Array.isArray(parsedValue.experiences) ? parsedValue.experiences : []
-    };
+    return parsedValue;
   } catch {
     return null;
   }
@@ -37,88 +49,111 @@ function readCachedPortfolioSnapshot() {
 
 function writeCachedPortfolioSnapshot(snapshot) {
   try {
-    window.localStorage.setItem(
-      PORTFOLIO_CACHE_KEY,
-      JSON.stringify({
-        skills: Array.isArray(snapshot?.skills) ? snapshot.skills : [],
-        projects: Array.isArray(snapshot?.projects) ? snapshot.projects : [],
-        experiences: Array.isArray(snapshot?.experiences) ? snapshot.experiences : []
-      })
-    );
+    window.localStorage.setItem(PORTFOLIO_CACHE_KEY, JSON.stringify(normalizePortfolioSnapshot(snapshot)));
   } catch {
     // Ignore storage failures and keep rendering from memory.
   }
 }
 
-function mergeProjectsWithLocalFallback(dynamicProjects = []) {
-  const localProjects = Array.isArray(portfolioData.projects) ? portfolioData.projects : [];
-  const normalizedDynamic = Array.isArray(dynamicProjects) ? dynamicProjects : [];
-  const existingTitles = new Set(
-    normalizedDynamic.map((project) => String(project?.title || "").trim().toLowerCase()).filter(Boolean)
-  );
-
-  const missingLocalProjects = localProjects.filter((project) => {
-    const titleKey = String(project?.title || "").trim().toLowerCase();
-    return titleKey && !existingTitles.has(titleKey);
-  });
-
-  return [...normalizedDynamic, ...missingLocalProjects];
+function getSnapshotUpdatedAt(snapshot) {
+  const updatedAt = snapshot && typeof snapshot === "object" ? snapshot.updatedAt : null;
+  return typeof updatedAt === "string" && updatedAt.trim() ? updatedAt.trim() : null;
 }
 
-function buildPortfolioFromSnapshot(snapshot) {
-  const localBase = buildLocalPortfolio();
-  const cachedSnapshot = snapshot || {};
+async function resolvePortfolioState() {
+  const cachedSnapshot = typeof window !== "undefined" ? readCachedPortfolioSnapshot() : null;
 
-  return {
-    ...localBase,
-    skills: Array.isArray(cachedSnapshot.skills) ? cachedSnapshot.skills : localBase.skills,
-    projects: mergeProjectsWithLocalFallback(cachedSnapshot.projects),
-    experiences: Array.isArray(cachedSnapshot.experiences) ? cachedSnapshot.experiences : localBase.experiences
-  };
+  if (cachedSnapshot) {
+    try {
+      const liveMeta = await getPortfolioMeta();
+      const cachedUpdatedAt = getSnapshotUpdatedAt(cachedSnapshot);
+      const liveUpdatedAt = typeof liveMeta?.updatedAt === "string" ? liveMeta.updatedAt.trim() : null;
+
+      if (cachedUpdatedAt && liveUpdatedAt && cachedUpdatedAt === liveUpdatedAt) {
+        return {
+          portfolio: normalizePortfolioSnapshot(cachedSnapshot),
+          dataSourceStatus: "live"
+        };
+      }
+    } catch {
+      // Ignore meta probe failures and fall back to fetching the full portfolio.
+    }
+  }
+
+  try {
+    const portfolioDataFromApi = await getPortfolioData();
+    const liveUpdatedAt = getSnapshotUpdatedAt(portfolioDataFromApi);
+    const nextPortfolio = normalizePortfolioSnapshot({
+      ...portfolioDataFromApi,
+      updatedAt: liveUpdatedAt || getSnapshotUpdatedAt(cachedSnapshot)
+    });
+
+    writeCachedPortfolioSnapshot(nextPortfolio);
+    return {
+      portfolio: nextPortfolio,
+      dataSourceStatus: "live"
+    };
+  } catch {
+    if (cachedSnapshot) {
+      return {
+        portfolio: normalizePortfolioSnapshot(cachedSnapshot),
+        dataSourceStatus: "cached"
+      };
+    }
+
+    return {
+      portfolio: buildLocalPortfolio(),
+      dataSourceStatus: "local"
+    };
+  }
+}
+
+function getBootstrapPortfolioState() {
+  if (!bootstrapPortfolioPromise) {
+    bootstrapPortfolioPromise = resolvePortfolioState().finally(() => {
+      bootstrapPortfolioPromise = null;
+    });
+  }
+
+  return bootstrapPortfolioPromise;
 }
 
 export function usePortfolioData() {
-  const [portfolio, setPortfolio] = useState(() => {
+  const initialState = useMemo(() => {
     if (typeof window === "undefined") {
-      return buildLocalPortfolio();
+      return {
+        portfolio: buildLocalPortfolio(),
+        dataSourceStatus: "local"
+      };
     }
 
-    return buildPortfolioFromSnapshot(readCachedPortfolioSnapshot());
+    const cachedSnapshot = readCachedPortfolioSnapshot();
+    return {
+      portfolio: normalizePortfolioSnapshot(cachedSnapshot),
+      dataSourceStatus: cachedSnapshot ? "cached" : "local"
+    };
+  }, []);
+
+  const [portfolio, setPortfolio] = useState(() => {
+    return initialState.portfolio;
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [dataSourceStatus, setDataSourceStatus] = useState(initialState.dataSourceStatus);
   const isMountedRef = useRef(true);
 
-  async function loadProjects(skipCache = false) {
+  async function loadPortfolio(skipCache = false) {
     if (!isMountedRef.current) {
       return;
     }
     setIsLoading(true);
 
     try {
-      const dynamicData = await getPortfolioDynamicSections({ skipCache });
+      const nextState = skipCache ? await resolvePortfolioState() : await getBootstrapPortfolioState();
       if (!isMountedRef.current) {
         return;
       }
-
-      setPortfolio((current) => ({
-        ...current,
-        skills: Array.isArray(dynamicData.skills) ? dynamicData.skills : current.skills,
-        projects: mergeProjectsWithLocalFallback(dynamicData.projects),
-        experiences: Array.isArray(dynamicData.experiences) ? dynamicData.experiences : current.experiences
-      }));
-      writeCachedPortfolioSnapshot(dynamicData);
-    } catch {
-      if (!isMountedRef.current) {
-        return;
-      }
-      if (typeof window !== "undefined") {
-        const cachedSnapshot = readCachedPortfolioSnapshot();
-        if (cachedSnapshot) {
-          setPortfolio(buildPortfolioFromSnapshot(cachedSnapshot));
-          return;
-        }
-      }
-      setPortfolio(buildLocalPortfolio());
+      setPortfolio(nextState.portfolio);
+      setDataSourceStatus(nextState.dataSourceStatus);
     } finally {
       if (isMountedRef.current) {
         setIsLoading(false);
@@ -128,26 +163,19 @@ export function usePortfolioData() {
 
   useEffect(() => {
     isMountedRef.current = true;
-    loadProjects(true);
+    loadPortfolio();
 
     return () => {
       isMountedRef.current = false;
     };
   }, []);
 
-  const displayPortfolio = useMemo(
-    () => ({
-      ...buildLocalPortfolio(),
-      skills: Array.isArray(portfolio.skills) ? portfolio.skills : [],
-      projects: Array.isArray(portfolio.projects) ? portfolio.projects : [],
-      experiences: Array.isArray(portfolio.experiences) ? portfolio.experiences : []
-    }),
-    [portfolio]
-  );
+  const displayPortfolio = useMemo(() => normalizePortfolioSnapshot(portfolio), [portfolio]);
 
   return {
     displayPortfolio,
     isLoading,
-    loadProjects
+    loadPortfolio,
+    dataSourceStatus
   };
 }

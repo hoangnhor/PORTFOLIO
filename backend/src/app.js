@@ -10,7 +10,7 @@ import portfolioRoutes from "./routes/portfolio.routes.js";
 
 const app = express();
 app.disable("x-powered-by");
-app.set("trust proxy", 1);
+app.set("trust proxy", env.trustProxy);
 
 function normalizeOrigin(origin) {
   return String(origin || "").trim().replace(/\/+$/, "");
@@ -38,8 +38,8 @@ const corsOptions = {
     corsError.status = 403;
     return callback(corsError);
   },
-  methods: ["GET", "PUT", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "x-admin-token", "Authorization", "Cache-Control"],
+  methods: ["GET", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Cache-Control"],
   maxAge: 86400
 };
 

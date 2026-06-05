@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import request from "supertest";
 import mongoose from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
-
-process.env.ADMIN_TOKEN = "test-admin-token";
+import Portfolio from "../src/models/portfolio.model.js";
+import { defaultPortfolio } from "../src/utils/defaultPortfolio.js";
 
 const { default: app } = await import("../src/app.js");
 const { connectDatabase, disconnectDatabase } = await import("../src/config/database.js");
@@ -32,12 +32,15 @@ test.after(async () => {
   }
 });
 
-test("PUT /api/portfolio then GET returns updated data", async (t) => {
+test("GET /api/portfolio returns persisted data", async (t) => {
   if (!integrationEnabled) {
     t.skip("set ENABLE_INTEGRATION_MONGO=true to run");
     return;
   }
+  await Portfolio.deleteMany({});
+
   const payload = {
+    key: "main",
     fullName: "Integration User",
     headline: "Fullstack Developer",
     intro: "Portfolio intro",
@@ -59,10 +62,7 @@ test("PUT /api/portfolio then GET returns updated data", async (t) => {
     experiences: [{ company: "ABC", role: "Intern", period: "2026", description: "Worked on APIs", details: [] }]
   };
 
-  const putResponse = await request(app).put("/api/portfolio").set("x-admin-token", process.env.ADMIN_TOKEN).send(payload);
-  assert.equal(putResponse.status, 200);
-  assert.equal(putResponse.body.fullName, payload.fullName);
-  assert.equal(putResponse.body.key, "main");
+  await Portfolio.create(payload);
 
   const getResponse = await request(app).get("/api/portfolio");
   assert.equal(getResponse.status, 200);
@@ -71,21 +71,19 @@ test("PUT /api/portfolio then GET returns updated data", async (t) => {
   assert.deepEqual(getResponse.body.education?.[0]?.details, ["Computer Science"]);
 });
 
-test("PUT /api/portfolio partial update does not wipe required fields", async (t) => {
+test("GET /api/portfolio falls back to default portfolio when collection is empty", async (t) => {
   if (!integrationEnabled) {
     t.skip("set ENABLE_INTEGRATION_MONGO=true to run");
     return;
   }
-  const partialPayload = { phone: "0123456789" };
-  const response = await request(app)
-    .put("/api/portfolio")
-    .set("x-admin-token", process.env.ADMIN_TOKEN)
-    .set("x-request-id", "integration-partial")
-    .send(partialPayload);
+  await Portfolio.deleteMany({});
+
+  const response = await request(app).get("/api/portfolio").set("x-request-id", "integration-default");
 
   assert.equal(response.status, 200);
-  assert.equal(response.body.phone, "0123456789");
-  assert.equal(response.body.fullName, "Integration User");
+  assert.equal(response.body.fullName, defaultPortfolio.fullName);
+  assert.equal(response.body.headline, defaultPortfolio.headline);
+  assert.equal(response.body.email, defaultPortfolio.email);
 });
 
 test("GET /api/ready returns ready when mongo connected", async (t) => {

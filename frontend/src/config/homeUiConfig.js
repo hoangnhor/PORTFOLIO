@@ -11,7 +11,9 @@ export const HOME_UI = {
     target: "contact"
   },
   apiStatus: {
-    connected: "API status: Connected",
-    fallback: "Đang hiển thị dữ liệu local fallback."
+    live: "Dữ liệu đang lấy trực tiếp từ BE.",
+    cached: "Đang dùng dữ liệu đã lưu tạm.",
+    local: "Đang hiển thị dữ liệu local fallback.",
+    loading: "Đang tải dữ liệu từ BE..."
   }
 };

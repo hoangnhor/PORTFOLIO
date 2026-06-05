@@ -9,10 +9,7 @@
     "dev:be": "npm --prefix backend run dev",
     "dev:fe": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
-    "build:fe": "npm --prefix frontend run build",
-    "bootstrap:be": "npm --prefix backend run bootstrap",
-    "cleanup:be:singleton": "npm --prefix backend run cleanup:singleton",
-    "seed:be": "npm --prefix backend run seed"
+    "build:fe": "npm --prefix frontend run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

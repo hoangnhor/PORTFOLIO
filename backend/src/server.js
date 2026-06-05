@@ -6,7 +6,11 @@ import { logger } from "./utils/logger.js";
 async function startServer() {
   try {
     validateEnv();
-    await connectDatabase();
+    try {
+      await connectDatabase();
+    } catch (error) {
+      logger.warn("database_connection_failed", { message: error.message });
+    }
     app.listen(env.port, () => {
       logger.info("server_started", { port: env.port });
     });

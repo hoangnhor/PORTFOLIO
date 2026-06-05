@@ -11,10 +11,9 @@ Personal fullstack portfolio system, production-aware.
 ## 1) Features
 
 - Public portfolio UI (skills, projects, experience, contact)
-- Backend API for portfolio read/update
-- Admin-protected update endpoint (`PUT /api/portfolio`)
+- Backend API for portfolio read
 - Structured logging + request id
-- Security baseline: `helmet`, CORS allowlist, rate limiting, payload validation
+- Security baseline: `helmet`, CORS allowlist, hybrid rate limiting with Mongo primary and in-memory fallback
 - Local fallback data on frontend when API is unavailable
 
 ## 2) Tech Requirements
@@ -75,7 +74,7 @@ Create env files:
 NODE_ENV=development
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/hoang_portfolio
-ADMIN_TOKEN=replace-with-strong-secret
+TRUST_PROXY=false
 FRONTEND_ORIGINS=http://localhost:5173
 ```
 
@@ -108,9 +107,6 @@ npm run dev:fe
 npm run install:all
 npm run dev
 npm run build
-npm run bootstrap:be
-npm run seed:be
-npm run cleanup:be:singleton
 ```
 
 ### Backend
@@ -139,43 +135,11 @@ Base URL (local): `http://localhost:5000`
 - `GET /api/ready`
 - `GET /api/portfolio`
 - `GET /api/portfolio/meta`
-- `PUT /api/portfolio` (admin token required)
 
-Auth header for update:
+Note: if MongoDB is temporarily unavailable, the backend still boots and serves the portfolio from fallback data.
+Rate limiting uses MongoDB when available and falls back to in-memory enforcement when MongoDB is down.
 
-- `x-admin-token: <ADMIN_TOKEN>`
-- or `Authorization: Bearer <ADMIN_TOKEN>`
-
-Example update request:
-
-```bash
-curl -X PUT http://localhost:5000/api/portfolio \
-  -H "Content-Type: application/json" \
-  -H "x-admin-token: replace-with-strong-secret" \
-  -d "{\"headline\":\"Fullstack Web Developer\"}"
-```
-
-## 9) Data Bootstrap / Seed
-
-Bootstrap default portfolio when database is empty:
-
-```bash
-npm run bootstrap:be
-```
-
-Seed/update portfolio data:
-
-```bash
-npm run seed:be
-```
-
-Cleanup old duplicated portfolio documents and keep singleton:
-
-```bash
-npm run cleanup:be:singleton
-```
-
-## 10) Testing & Verification
+## 9) Testing & Verification
 
 Recommended checks before deploy:
 
@@ -194,7 +158,13 @@ Note: Mongo integration tests in `backend/test/portfolio.integration.test.js` ru
 ENABLE_INTEGRATION_MONGO=true npm --prefix backend run test
 ```
 
-## 11) CI
+Or run only integration tests:
+
+```bash
+ENABLE_INTEGRATION_MONGO=true npm --prefix backend run test:integration
+```
+
+## 10) CI
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
 
@@ -202,19 +172,18 @@ Current pipeline includes:
 
 1. Install dependencies
 2. Frontend lint/build/test
-3. Backend lint/test/smoke
+3. Backend lint/test/integration/smoke
 
-## 12) Deployment Checklist
+## 11) Deployment Checklist
 
 - [ ] Set all required env vars
-- [ ] Use strong `ADMIN_TOKEN`
 - [ ] Confirm Mongo connectivity
 - [ ] Verify `GET /api/health` and `GET /api/ready`
 - [ ] Confirm FE uses correct `VITE_API_BASE_URL`
 - [ ] Run lint/test/build before release
 - [ ] Verify GitHub Actions keep-alive workflow pings `https://portfolio-hqw1.onrender.com/api/health`
 
-## 13) Live
+## 12) Live
 
 - Website: [https://tranvanhoang.vercel.app/](https://tranvanhoang.vercel.app/)
 - Repository: [https://github.com/hoangnhor/PORTFOLIO](https://github.com/hoangnhor/PORTFOLIO)

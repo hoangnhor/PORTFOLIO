@@ -15,6 +15,18 @@ export function isHttpUrl(url) {
   return /^https?:\/\//i.test(String(url || "").trim());
 }
 
+function normalizeLinkKind(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+export function getLinkByKind(links, kind) {
+  if (!Array.isArray(links) || !kind) {
+    return null;
+  }
+
+  return links.find((link) => normalizeLinkKind(link?.kind) === normalizeLinkKind(kind)) || null;
+}
+
 export function localizeRoleText(text) {
   return text || "";
 }
@@ -75,15 +87,18 @@ export function getProjectActionLinks(project) {
     ? project.links.filter((link) => isHttpUrl(link?.url))
     : [];
 
-  const demoLink = links.find((link) => /demo|live/i.test(String(link?.label || ""))) || null;
+  const demoLink = getLinkByKind(links, "demo") || links.find((link) => /demo|live/i.test(String(link?.label || ""))) || null;
   const githubCandidates = links.filter((link) => {
     const label = String(link?.label || "").toLowerCase();
     const url = String(link?.url || "").toLowerCase();
-    return label.includes("github") || url.includes("github.com");
+    return normalizeLinkKind(link?.kind) === "github" || label.includes("github") || url.includes("github.com");
   });
-  const githubFe = githubCandidates.find((link) => /fe|frontend/i.test(String(link?.label || ""))) || null;
-  const githubBe = githubCandidates.find((link) => /be|backend/i.test(String(link?.label || ""))) || null;
-  const githubGeneral = githubCandidates.find((link) => /^github$/i.test(String(link?.label || "").trim())) || null;
+  const githubFe =
+    getLinkByKind(links, "frontend") || githubCandidates.find((link) => /fe|frontend/i.test(String(link?.label || ""))) || null;
+  const githubBe =
+    getLinkByKind(links, "backend") || githubCandidates.find((link) => /be|backend/i.test(String(link?.label || ""))) || null;
+  const githubGeneral =
+    getLinkByKind(links, "github") || githubCandidates.find((link) => /^github$/i.test(String(link?.label || "").trim())) || null;
 
   const actions = [];
   if (demoLink) {
